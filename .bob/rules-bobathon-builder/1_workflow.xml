@@ -1,0 +1,1948 @@
+<bobathon_builder_workflow>
+  <overview>
+    This mode guides facilitators through creating customized bobathons (Bob bootcamps) for clients.
+    The workflow ensures complete, validated, and tailored bootcamp materials through
+    structured Q&A, validation, and generation steps.
+  </overview>
+
+  <core_principle>
+    Always gather complete information before generating materials. Use interactive Q&A
+    to understand client needs, validate inputs, and ensure consistency across all materials.
+  </core_principle>
+
+  <todo_tracking>
+    <description>
+      Use the update_todo_list tool to track progress through the bobathon creation workflow.
+      This provides visual feedback to users and ensures no mandatory steps are skipped.
+    </description>
+    <when_to_create>
+      Create the todo list at the start of setup_new_bobathon workflow
+    </when_to_create>
+    <when_to_update>
+      Update after completing each major step or phase
+    </when_to_update>
+    <format>
+      Use clear, actionable task descriptions with status indicators:
+      - [ ] Pending task
+      - [-] In progress task
+      - [x] Completed task
+    </format>
+  </todo_tracking>
+
+  <main_workflows>
+    <workflow name="setup_new_bobathon">
+      <description>Create a new bobathon configuration from scratch for sellers</description>
+      
+      <initial_todo_list>
+        <action>Create todo list at workflow start using update_todo_list tool</action>
+        <template>
+[ ] Check GitHub Enterprise token (GHE_TOKEN)
+[ ] Collect and validate Salesforce opportunity number
+[ ] Determine delivery format (self-serve vs facilitated)
+[ ] Collect seller contact information
+[ ] Gather client information and tech stack
+[ ] Identify key use cases (minimum 3)
+[ ] Determine code generation strategy (MANDATORY - must ask)
+[ ] Generate lab code if requested (MANDATORY if code generation chosen)
+[ ] Determine Lab 3 code source
+[ ] Include Bob differentiators in Lab 3
+[ ] Validate collected information
+[ ] Generate bobathon configuration
+[ ] Generate email templates and survey
+[ ] Generate client-facing README
+[ ] Run lab validation
+[ ] Run schedule validation
+[ ] Run documentation validation
+        </template>
+        <note>
+          Create this todo list immediately when starting the setup_new_bobathon workflow.
+          Update it after completing each step to show progress.
+          
+          IMPORTANT: "Generate lab code if requested" is MANDATORY when user chooses code generation.
+          This step cannot be skipped if the user selected any code generation option.
+        </note>
+      </initial_todo_list>
+      
+      <phase name="initialization">
+        <step number="0a" priority="mandatory">
+          <action>Check for GitHub Enterprise token</action>
+          <todo_update>Mark "Check GitHub Enterprise token (GHE_TOKEN)" as completed after verification</todo_update>
+          <details>
+            Before collecting opportunity information, verify that the GHE_TOKEN environment
+            variable is set. This token is required to submit opportunities to the tracking system.
+            
+            If the token is not set, provide setup instructions and wait for user to configure it.
+            If the token is set, proceed directly to opportunity collection.
+          </details>
+          <implementation>
+            <check_command>
+              Use execute_command to check if GHE_TOKEN is set:
+              - Windows: echo $env:GHE_TOKEN
+              - macOS/Linux: echo $GHE_TOKEN
+            </check_command>
+            <if_not_set>
+              <action>Prompt user with setup instructions</action>
+              <ask_followup_question>
+                <question>GitHub Enterprise token (GHE_TOKEN) is not configured. This is required to track bobathon opportunities. Would you like instructions to set it up?</question>
+                <follow_up>
+                  <suggest>Yes, show me how to set up the token</suggest>
+                  <suggest>I'll set it up myself and come back</suggest>
+                </follow_up>
+              </ask_followup_question>
+              <setup_instructions>
+                If user requests instructions, provide:
+                
+                1. Navigate to https://github.ibm.com/settings/tokens
+                2. Click "Generate new token" (classic)
+                3. Name it "Bobathon Builder Tracking"
+                4. Select the "repo" scope
+                5. Generate and copy the token
+                6. Set environment variable:
+                
+                Windows (PowerShell):
+                  Temporary: $env:GHE_TOKEN="your_token_here"
+                  Permanent: setx GHE_TOKEN "your_token_here" (requires restart)
+                
+                macOS/Linux:
+                  Temporary: export GHE_TOKEN="your_token_here"
+                  Permanent: Add to ~/.bashrc or ~/.zshrc:
+                    echo 'export GHE_TOKEN="your_token_here"' >> ~/.bashrc
+                    source ~/.bashrc
+                
+                After setting the token, restart Bob or reload the terminal, then try again.
+              </setup_instructions>
+            </if_not_set>
+            <if_set>
+              <action>Proceed silently to opportunity collection</action>
+              <note>No need to inform user - token is configured and ready</note>
+            </if_set>
+          </implementation>
+        </step>
+        
+        <step number="0b" priority="mandatory">
+          <action>Collect and validate Salesforce opportunity number</action>
+          <required_field>opportunity_number</required_field>
+          <prerequisite>GHE_TOKEN must be set (checked in step 0a)</prerequisite>
+          <details>
+            Collect the Salesforce opportunity number for tracking and reconciliation purposes.
+            This is mandatory for all bobathons.
+            
+            The opportunity number must be:
+            - Exactly 18 characters long
+            - Alphanumeric (letters and numbers only)
+            - Example format: 000Xx00000XXxXXXX0
+            
+            After validation, the opportunity will be automatically submitted to the tracking system.
+          </details>
+          <ask_followup_question>
+            <question>What is the Salesforce opportunity number for this bobathon? (Must be 18 characters, e.g., 000Xx00000XXxXXXX0)</question>
+            <follow_up>
+              <suggest>Enter your 18-character opportunity ID</suggest>
+              <suggest>I don't have one (education/testing)</suggest>
+            </follow_up>
+          </ask_followup_question>
+          <education_testing_fallback>
+            If user indicates they don't have an opportunity number (education/testing scenario),
+            instruct them to use: 000000000000000000 (18 zeros)
+          </education_testing_fallback>
+          <validation>
+            <rule>Length must be exactly 18 characters</rule>
+            <rule>Must contain only alphanumeric characters (A-Z, a-z, 0-9)</rule>
+            <rule>Cannot be empty or contain spaces</rule>
+            <error_message>Invalid opportunity number format. Must be exactly 18 alphanumeric characters (e.g., 000Xx00000XXxXXXX0)</error_message>
+          </validation>
+          <submission_process>
+            <description>
+              After validation, submit the opportunity number to the tracking system by creating
+              a GitHub issue in the main repository. This works across all platforms (Windows, macOS, Linux).
+            </description>
+            <steps>
+              <step>Validate opportunity number format</step>
+              <step>Detect operating system (Windows vs Unix-based)</step>
+              <step>Execute platform-specific command to create GitHub issue</step>
+              <step>Confirm successful submission</step>
+            </steps>
+            <implementation>
+              Use execute_command tool with OS detection:
+              - Windows: Use PowerShell with Invoke-RestMethod
+              - macOS/Linux: Use curl command
+              
+              Both methods POST to: https://github.ibm.com/api/v3/repos/WW-CE/seller-bobathon-builder/issues
+              
+              Issue includes:
+              - Title: "Opportunity: [NUMBER]"
+              - Body: Submitted by, opportunity number, repository, timestamp
+              - Labels: "opportunity-tracking" (always), plus "education-testing" if opportunity is 000000000000000000
+              
+              This automatic labeling allows easy filtering:
+              - All opportunities: filter by "opportunity-tracking"
+              - Real opportunities only: filter by "opportunity-tracking" NOT "education-testing"
+              - Test/education only: filter by "education-testing"
+              
+              The GHE_TOKEN environment variable (verified in step 0a) will be used for authentication.
+            </implementation>
+          </submission_process>
+          <todo_update>Mark "Collect and validate Salesforce opportunity number" as completed after successful submission</todo_update>
+        </step>
+        
+        <step number="1">
+          <action>Greet and explain the process</action>
+          <todo_update>No todo update needed - informational step</todo_update>
+          <details>
+            Explain that you'll guide them through creating a customized bobathon (bob bootcamp) for their client.
+            This is designed for sellers who will either:
+            - Provide materials for self-serve delivery (client runs independently)
+            - Facilitate the bobathon virtually
+            
+            Mention this will take 5-10 minutes and result in a complete package including:
+            - Bobathon configuration and materials
+            - Email templates for client communication
+            - Attendee survey for measuring impact
+          </details>
+        </step>
+        
+        <step number="1a">
+          <action>Determine delivery format</action>
+          <required_field>delivery.format</required_field>
+          <ask_followup_question>
+            <question>Will this bobathon be self-serve (materials only) or facilitated (you provide virtual guidance)?</question>
+            <follow_up>
+              <suggest>Self-serve - Client runs independently with provided materials</suggest>
+              <suggest>Facilitated - I'll provide virtual facilitation and guidance</suggest>
+              <suggest>Not sure yet - Help me decide based on client needs</suggest>
+            </follow_up>
+          </ask_followup_question>
+          <details>
+            Self-serve: Generate comprehensive standalone materials with detailed instructions
+            Facilitated: Generate facilitator-focused materials with presentation guidance
+            
+            This choice affects:
+            - Level of detail in instructions
+            - Email template content
+            - Schedule format and notes
+          </details>
+          <todo_update>Mark "Determine delivery format (self-serve vs facilitated)" as completed after user selection</todo_update>
+        </step>
+        
+        <step number="1b">
+          <action>Collect seller contact information</action>
+          <todo_update>Mark "Collect seller contact information" as completed after gathering all contact details</todo_update>
+          <required_fields>
+            <field>seller_contact.name</field>
+            <field>seller_contact.email</field>
+            <field>seller_contact.phone</field>
+            <field>seller_contact.organization</field>
+          </required_fields>
+          <ask_followup_question>
+            <question>What are your contact details? (This will be included in all materials for client support)</question>
+            <follow_up>
+              <suggest>Let me provide my details</suggest>
+            </follow_up>
+          </ask_followup_question>
+          <details>
+            Seller contact information will be embedded in:
+            - Email templates
+            - README and schedule documents
+            - Survey materials
+            - Support sections
+            
+            This ensures clients know who to contact for questions and follow-up.
+          </details>
+        </step>
+        
+        <step number="2">
+          <action>Offer to start from an example</action>
+          <details>
+            Ask if they want to start from scratch or use an example as a template.
+            Available examples:
+            - examples/sample-config-fintech.yaml (Financial Services / Java)
+            - examples/sample-config-healthcare.yaml (Healthcare / Python)
+            
+            If they choose an example, read it and use as a starting point.
+          </details>
+          <ask_followup_question>
+            <question>Would you like to start from an example configuration or create one from scratch?</question>
+            <follow_up>
+              <suggest>Create from scratch - I'll provide all the details</suggest>
+              <suggest>Start from the Financial Services example (Java/Spring Boot)</suggest>
+              <suggest>Start from the Healthcare example (Python/Django)</suggest>
+              <suggest>Show me both examples first so I can decide</suggest>
+            </follow_up>
+          </ask_followup_question>
+        </step>
+      </phase>
+
+      <phase name="client_information">
+        <step number="3">
+          <action>Gather basic client information</action>
+          <required_fields>
+            <field>client.name</field>
+            <field>client.market</field>
+            <field>client.contact.primary</field>
+            <field>client.contact.email</field>
+          </required_fields>
+          <ask_followup_question>
+            <question>What is the client's company name and industry/market segment?</question>
+            <follow_up>
+              <suggest>Let me type the specific details</suggest>
+              <suggest>Acme Financial Services - Banking/Financial Services</suggest>
+              <suggest>HealthCare Plus - Healthcare Technology</suggest>
+              <suggest>TechRetail Corp - E-commerce/Retail</suggest>
+            </follow_up>
+          </ask_followup_question>
+        </step>
+      </phase>
+
+      <phase name="technology_stack">
+        <step number="4">
+          <action>Identify primary technology stack</action>
+          <required_fields>
+            <field>technologies.primary_language</field>
+            <field>technologies.frameworks</field>
+            <field>technologies.infrastructure</field>
+          </required_fields>
+          <ask_followup_question>
+            <question>What is the client's primary programming language and key frameworks?</question>
+            <follow_up>
+              <suggest>Let me specify their exact stack</suggest>
+              <suggest>Python with Django and React</suggest>
+              <suggest>Java with Spring Boot and Angular</suggest>
+              <suggest>JavaScript/TypeScript with Node.js and React</suggest>
+            </follow_up>
+          </ask_followup_question>
+        </step>
+        
+        <step number="5">
+          <action>Gather additional technology details</action>
+          <optional_fields>
+            <field>technologies.tools</field>
+            <field>technologies.version_control</field>
+            <field>technologies.ide_preferences</field>
+          </optional_fields>
+          <details>
+            Ask about their development tools, version control system, and IDE preferences.
+            This helps customize examples and instructions.
+          </details>
+        </step>
+      </phase>
+
+      <phase name="use_cases">
+        <step number="6">
+          <action>Identify key use cases</action>
+          <required_minimum>3 use cases</required_minimum>
+          <details>
+            Ask what specific problems or scenarios they want to address with Bob.
+            For each use case, gather:
+            - Name (brief, descriptive)
+            - Description (what they want to accomplish)
+            - Priority (high, medium, low)
+            - Estimated time (for Lab 3)
+          </details>
+          <ask_followup_question>
+            <question>What are the top 3-4 use cases or scenarios you want to cover in the bobathon?</question>
+            <follow_up>
+              <suggest>Let me describe our specific use cases</suggest>
+              <suggest>API development, code refactoring, testing, debugging</suggest>
+              <suggest>Legacy code modernization, performance optimization, security updates</suggest>
+              <suggest>Microservices development, database optimization, CI/CD integration</suggest>
+            </follow_up>
+          </ask_followup_question>
+        </step>
+        
+        <step number="7">
+          <action>Prioritize use cases</action>
+          <details>
+            Help them prioritize use cases based on:
+            - Business impact
+            - Team pain points
+            - Available time in bobathon
+            
+            Ensure at least 2 high-priority use cases for Lab 3.
+          </details>
+        </step>
+      </phase>
+
+      <phase name="schedule_and_timing">
+        <step number="8">
+          <action>Determine bobathon duration</action>
+          <default>3-4 hours (seller default)</default>
+          <ask_followup_question>
+            <question>How much time do you have for the bobathon?</question>
+            <follow_up>
+              <suggest>3 hours (half-day) - Condensed essentials, recommended for sellers</suggest>
+              <suggest>4 hours (extended half-day) - More comprehensive coverage</suggest>
+              <suggest>6 hours (full day) - Complete deep dive with lunch break</suggest>
+              <suggest>Custom duration - let me specify</suggest>
+            </follow_up>
+          </ask_followup_question>
+          <details>
+            For sellers, shorter formats (3-4 hours) are typically preferred:
+            - 3 hours: Introduction, core features, one key use case
+            - 4 hours: Introduction, core features, advanced topics, client use cases
+            - 6 hours: Full comprehensive coverage (traditional format)
+          </details>
+        </step>
+        
+        <step number="9">
+          <action>Adjust schedule based on duration</action>
+          <timing_rules>
+            <rule duration="3_hours">
+              <session>180 minutes total</session>
+              <breakdown>
+                - Introduction & Setup: 15 min
+                - Basic Bob Features: 60 min (includes Lab 1: 20 min)
+                - Advanced Features: 40 min (includes Lab 2: 20 min)
+                - Client Use Case: 50 min (includes Lab 3: 40 min)
+                - Wrap-up: 15 min
+              </breakdown>
+            </rule>
+            <rule duration="4_hours">
+              <session>240 minutes total</session>
+              <breakdown>
+                - Introduction & Setup: 20 min
+                - Basic Bob Features: 75 min (includes Lab 1: 25 min)
+                - Advanced Features: 50 min (includes Lab 2: 25 min)
+                - Client Use Cases: 75 min (includes Lab 3: 60 min)
+                - Wrap-up: 20 min
+              </breakdown>
+            </rule>
+            <rule duration="6_hours">
+              <morning>180 minutes (intro 30, basic 90, advanced 60)</morning>
+              <lunch>60 minutes</lunch>
+              <afternoon>180 minutes (client-specific 150, wrap-up 30)</afternoon>
+            </rule>
+            <rule duration="12_hours">
+              <day1>360 minutes (deep dive into Bob features)</day1>
+              <day2>360 minutes (client-specific implementation)</day2>
+            </rule>
+          </timing_rules>
+          <details>
+            Calculate timing breakdown and ensure use cases fit within allocated time.
+            For 3-4 hour formats, prioritize high-impact use cases.
+            Warn if too many use cases for available time.
+          </details>
+        </step>
+      </phase>
+
+      <phase name="participants">
+        <step number="10">
+          <action>Gather participant information</action>
+          <optional_fields>
+            <field>participants.expected_count</field>
+            <field>participants.roles</field>
+            <field>participants.skill_levels</field>
+          </optional_fields>
+          <details>
+            Understanding the audience helps tailor difficulty and pace.
+            Ask about team size, roles, and experience levels.
+          </details>
+        </step>
+      </phase>
+
+      <phase name="resources">
+        <step number="11">
+          <action>Collect external resources</action>
+          <optional_fields>
+            <field>resources.documentation</field>
+            <field>resources.apis</field>
+            <field>resources.repositories</field>
+          </optional_fields>
+          <details>
+            Ask if they have internal documentation, APIs, or repositories that should
+            be referenced in the bobathon materials.
+          </details>
+        </step>
+      </phase>
+
+      <phase name="validation_and_generation" priority="mandatory">
+        <description>
+          This entire phase is mandatory and must be completed before delivering materials.
+          Validation ensures quality and prevents client-facing issues.
+        </description>
+        <todo_update>Mark "Validate collected information" as in progress when starting this phase</todo_update>
+        
+        <step number="12" priority="mandatory">
+          <action>Validate collected information</action>
+          <todo_update>Mark "Validate collected information" as completed after all validation checks pass</todo_update>
+          <validation_checks>
+            <check>All required fields are filled</check>
+            <check>At least 3 use cases defined</check>
+            <check>Timing adds up correctly</check>
+            <check>Use cases fit within available time</check>
+            <check>Tech stack is consistent</check>
+          </validation_checks>
+          <details>
+            Review all collected information and identify any gaps or inconsistencies.
+            Ask follow-up questions to fill gaps.
+          </details>
+        </step>
+        
+        <step number="13">
+          <action>Generate bobathon-config.yaml</action>
+          <details>
+            Create the complete configuration file with all collected information.
+            Use proper YAML formatting and include all sections.
+          </details>
+          <todo_update>Mark "Generate bobathon configuration" as completed after creating config file</todo_update>
+        </step>
+        
+        <step number="14">
+          <action>Generate email templates and survey</action>
+          <todo_update>Mark "Generate email templates and survey" as completed after creating all templates</todo_update>
+          <details>
+            Generate customized templates for seller communication:
+            1. Initial email template (templates/initial-email.md)
+               - Populated with client details, seller contact info
+               - Adjusted for delivery format (self-serve vs facilitated)
+               - Includes bobathon details and materials overview
+            
+            2. Follow-up email template (templates/followup-email.md)
+               - 1-week post-bobathon check-in
+               - Survey reminder and support resources
+               - Populated with seller contact information
+            
+            3. Attendee survey (templates/attendee-survey.md)
+               - Comprehensive feedback collection
+               - Business value and productivity metrics
+               - Use case identification questions
+               - Populated with client and bobathon details
+          </details>
+          <note>
+            These templates use placeholders that will be filled with actual values.
+            Sellers can customize further before sending to clients.
+          </note>
+        </step>
+        
+        <step number="15">
+          <action>Generate client-facing README</action>
+          <todo_update>Mark "Generate client-facing README" as completed after creating README</todo_update>
+          <details>
+            Create a professional README.md for the client bobathon package:
+            1. Rename current README.md to SELLER_README.md (seller documentation)
+            2. Generate new README.md for client package with:
+               - Bobathon overview and objectives
+               - Seller contact information
+               - Getting started section that references Bob installation instructions
+               - Link to resources/bob-installation.md for detailed installation steps
+               - Links to agenda (schedule/detailed-agenda.md)
+               - Links to resources (resources/ directory)
+               - Links to lab materials (labs/ directory)
+               - Support information
+            
+            The new README should be welcoming and professional, suitable for
+            client delivery. No YAML frontmatter needed.
+          </details>
+          <installation_reference>
+            The README MUST reference resources/bob-installation.md for Bob installation.
+            Include a clear link or section pointing clients to this file for:
+            - Platform-specific installation steps (macOS, Linux, Windows)
+            - Launch instructions
+            - Authentication steps
+          </installation_reference>
+          <note>
+            SELLER_README.md should be excluded from client package delivery.
+            It contains seller-specific instructions for using the template.
+          </note>
+        </step>
+        
+        <step number="16">
+          <action>Confirm and offer next steps</action>
+          <next_steps>
+            <option>Customize Lab 1 for their tech stack</option>
+            <option>Customize Lab 2 for their tech stack</option>
+            <option>Create Lab 3 exercises based on use cases</option>
+            <option>Generate detailed schedule</option>
+            <option>Generate email templates and survey</option>
+            <option>Review and validate all materials</option>
+          </next_steps>
+          <ask_followup_question>
+            <question>Configuration created! What would you like to do next?</question>
+            <follow_up>
+              <suggest>Customize all lab exercises and generate email templates</suggest>
+              <suggest>Create Lab 3 exercises based on our use cases</suggest>
+              <suggest>Generate email templates and attendee survey</suggest>
+              <suggest>Review the configuration and make adjustments</suggest>
+            </follow_up>
+          </ask_followup_question>
+        </step>
+      </phase>
+    </workflow>
+
+    <workflow name="customize_labs">
+      <description>Customize lab exercises for client's tech stack</description>
+      
+      <step number="1">
+        <action>Read bobathon configuration</action>
+        <details>
+          Read bobathon-config.yaml to understand:
+          - Client's technology stack
+          - Use cases and priorities
+          - Participant skill levels
+        </details>
+      </step>
+      
+      <step number="2">
+        <action>Read lab template</action>
+        <details>
+          Read the lab instructions file to understand structure and exercises.
+        </details>
+      </step>
+      
+      <step number="3">
+        <action>Customize exercises for tech stack</action>
+        <customization_rules>
+          <rule>Replace generic examples with client's languages/frameworks</rule>
+          <rule>Use client's actual tools and infrastructure</rule>
+          <rule>Reference client's coding standards if available</rule>
+          <rule>Adjust difficulty based on skill levels</rule>
+          <rule>Include client-specific terminology</rule>
+        </customization_rules>
+      </step>
+      
+      <step number="4">
+        <action>Update lab instructions file</action>
+        <details>
+          Apply changes to the lab instructions, maintaining structure but
+          tailoring all examples and exercises to the client.
+        </details>
+      </step>
+      
+      <step number="5" priority="mandatory">
+        <action>Ask about code generation preference</action>
+        <required>true</required>
+        <must_ask>This question MUST ALWAYS be asked - never skip or assume</must_ask>
+        <todo_update>Mark "Determine code generation strategy (MANDATORY - must ask)" as completed after user provides preference</todo_update>
+        <ask_followup_question>
+          <question>Would you like me to generate sample code for the lab exercises?</question>
+          <follow_up>
+            <suggest>Yes, generate both starter code and complete solutions (recommended - ready to deliver)</suggest>
+            <suggest>Generate starter code only (participants build solutions during bobathon)</suggest>
+            <suggest>No code generation (I'll create the code manually or use existing code)</suggest>
+            <suggest>Let me specify what to generate for each lab</suggest>
+          </follow_up>
+        </ask_followup_question>
+        <details>
+          This question MUST ALWAYS be asked - never skip or assume.
+          
+          This determines whether Bob will create:
+          - Starter code: Initial code files for participants to work with
+          - Solutions: Complete working implementations for facilitators
+          
+          Note: This applies to Labs 1 and 2. Lab 3 uses client's actual codebase.
+        </details>
+        <default_behavior>
+          If user does not provide a clear answer or skips this question,
+          DEFAULT to generating both starter code and complete solutions.
+          This ensures bobathons are always ready to deliver.
+        </default_behavior>
+      </step>
+      
+      <step number="6" priority="mandatory">
+        <action>Generate code based on preference</action>
+        <required>true</required>
+        <todo_update>
+          If user chose code generation:
+          - Mark "Generate lab code if requested (MANDATORY if code generation chosen)" as in progress when starting
+          - Mark as completed after all code files are created and validated
+          
+          If user chose "No code generation":
+          - Mark "Generate lab code if requested (MANDATORY if code generation chosen)" as completed with note "(Skipped - manual code creation)"
+        </todo_update>
+        <enforcement>
+          This step is MANDATORY when user chooses code generation.
+          If user selected any option OTHER than "No code generation", you MUST:
+          1. Update todo list to mark code generation as in progress
+          2. Trigger the generate_lab_code workflow
+          3. Actually create the code files
+          4. Validate the generated code
+          5. Update todo list to mark code generation as completed
+          6. Confirm completion to the user with file list
+          
+          DO NOT skip code generation if the user requested it.
+          DO NOT just acknowledge the request - actually generate the code.
+        </enforcement>
+        <details>
+          Based on user's choice, trigger the appropriate code generation workflow:
+          
+          - "Both starter and solutions" → Generate complete starter/ and solution/ directories
+          - "Starter only" → Generate starter/ directory only
+          - "No code generation" → Skip code generation, mark todo as completed with note
+          - "Let me specify" → Ask per-lab preferences, then generate accordingly
+          
+          If user chose code generation, you MUST execute the generate_lab_code workflow
+          and create actual code files. This is not optional.
+          
+          See generate_lab_code workflow for implementation details.
+        </details>
+        <validation>
+          After code generation, verify:
+          - Code files were actually created in labs/lab1-basic-operations/ and labs/lab2-advanced-workflows/
+          - Files contain actual code, not placeholders
+          - README files exist with setup instructions
+          - User is informed of what was created and where
+          - Todo list is updated to reflect completion
+        </validation>
+      </step>
+      
+      <step number="7">
+        <action>Add business value sections to labs</action>
+        <details>
+          Add "Business Impact" section at the end of each lab showing estimated productivity
+          gains based on IBM Client Zero actual usage data from resources/bob-productivity-gains-client-zero.md.
+
+          IMPORTANT: Always attribute these figures to IBM "Client Zero" - IBM's own internal
+          development teams using Bob in real production environments across 60+ case studies.
+
+          Match the lab's exercise type to the relevant Client Zero category:
+          - Testing exercises → Testing & Quality category (40-80% faster, e.g., 99.6% reduction for test generation)
+          - Documentation exercises → Documentation category (95-100% coverage, e.g., 99.2% time savings)
+          - Security/compliance exercises → Security & Compliance category (5-9 weeks saved per project)
+          - Feature development exercises → Feature Development category (40-80% productivity gain)
+          - Bug fixing exercises → Bug Fixing category (1-4 weeks saved per critical bug)
+          - DevOps/CI-CD exercises → DevOps & Automation category (15-20x faster deployment)
+          - Code analysis exercises → Analysis & Insights category (2-4 weeks saved)
+          - Modernization exercises → Modernization category (60-75% faster)
+
+          Also embed real-time value indicators within exercises where relevant, citing specific
+          Client Zero examples (e.g., "IBM DB2 team reduced test generation from 40 hours to 10 minutes").
+
+          Overall headline metrics to reference when applicable:
+          - 60-80% acceleration in development cycles
+          - $6,000 to $84,000+ cost savings per project
+          - 62-99% code acceptance rate
+          - 20-125% increase in developer productivity
+          - Based on 60+ IBM internal case studies (Client Zero)
+        </details>
+        <business_value_template>
+          <section_title>## 💰 Business Impact (Based on IBM Client Zero Data)</section_title>
+          <attribution_note>
+            Always include this note in the Business Impact section:
+            "> 📊 **Source**: These estimates are based on IBM's own internal usage as 'Client Zero' —
+            real-world results from IBM development teams across 60+ case studies."
+          </attribution_note>
+          <categories>
+            <category name="productivity">
+              <icon>⏱️</icon>
+              <metrics>Time saved, deployment speed, reduced context switching</metrics>
+              <client_zero_reference>
+                Reference specific Client Zero data matching the lab's exercise type.
+                Example for testing labs: "IBM DB2 team: 99.6% time reduction (40 hrs → 10 min) for test generation"
+                Example for DevOps labs: "IBM Instana team: 16x faster CI/CD pipeline (4 hrs → 15 min)"
+              </client_zero_reference>
+            </category>
+            <category name="quality">
+              <icon>🐛</icon>
+              <metrics>Bug detection rate, code consistency, test coverage</metrics>
+              <client_zero_reference>
+                Reference code acceptance rates from Client Zero: 62-99% of Bob-generated code
+                committed without modification, indicating production-ready quality.
+              </client_zero_reference>
+            </category>
+            <category name="security">
+              <icon>🔒</icon>
+              <metrics>Vulnerability prevention, compliance automation, secret management</metrics>
+              <client_zero_reference>
+                Example: "IBM API Connect team: 99% time savings on cryptographic analysis (3-4 days → 90 min, $30,000+ value per analysis)"
+                Example: "IBM Concert team: 95% time savings on FedRAMP compliance (30 days → 2 days, $84,000 saved per project)"
+              </client_zero_reference>
+            </category>
+            <category name="cost">
+              <icon>💰</icon>
+              <metrics>Reduced manual effort, fewer production issues, faster time-to-market</metrics>
+              <client_zero_reference>
+                Use ROI framework from Client Zero data:
+                - Average developer cost: $150/hour (fully loaded)
+                - Low end: 20-40% productivity improvement = 1.2-1.4x developer output
+                - Mid range: 40-60% improvement = 1.4-1.6x developer output
+                - High end: 60-125% improvement = 1.6-2.25x developer output
+              </client_zero_reference>
+            </category>
+          </categories>
+        </business_value_template>
+      </step>
+    </workflow>
+
+    <workflow name="generate_lab_code">
+      <description>Generate starter code and/or solutions for Labs 1 and 2</description>
+      <critical_requirement>
+        This workflow MUST actually create code files when invoked.
+        DO NOT just acknowledge the request - ACTUALLY GENERATE THE CODE.
+        
+        Enforcement rules:
+        1. You MUST use write_to_file or insert_content to create actual files
+        2. You MUST create files in the appropriate lab directories
+        3. You MUST verify files were created successfully
+        4. You MUST inform the user of what was created and where
+        
+        This is not optional. Code generation means creating actual code files.
+      </critical_requirement>
+      
+      <step number="1">
+        <action>Read lab instructions and configuration</action>
+        <details>
+          Read the customized lab instructions and bobathon-config.yaml to understand:
+          - Exercises and their requirements
+          - Client's technology stack
+          - Expected outcomes for each exercise
+        </details>
+      </step>
+      
+      <step number="2">
+        <action>Determine what to generate</action>
+        <generation_options>
+          <option name="both">
+            <generate>Starter code with TODO comments</generate>
+            <generate>Complete solution implementations</generate>
+            <generate>Test files (if applicable)</generate>
+            <generate>README with setup instructions</generate>
+          </option>
+          <option name="starter_only">
+            <generate>Starter code with TODO comments</generate>
+            <generate>Test files (if applicable)</generate>
+            <generate>README with setup instructions</generate>
+          </option>
+          <option name="custom">
+            <generate>Ask user to specify per lab</generate>
+          </option>
+        </generation_options>
+      </step>
+      
+      <step number="3" priority="mandatory">
+        <action>Generate code for Lab 1</action>
+        <todo_update>Update "Generate lab code if requested (MANDATORY if code generation chosen)" to show progress: "Generating Lab 1 code..."</todo_update>
+        <enforcement>
+          You MUST actually create code files using write_to_file tool.
+          DO NOT skip this step. DO NOT just describe what should be created.
+          ACTUALLY CREATE THE FILES.
+        </enforcement>
+        <prerequisites_requirement>
+          Lab 1 MUST ALWAYS include Bob installation as a prerequisite.
+          Reference the installation instructions from resources/bob-installation.md
+        </prerequisites_requirement>
+        <details>
+          Lab 1 structure:
+          
+          1. PREREQUISITES SECTION (MANDATORY):
+             - Include "Installing Bob" as the first prerequisite
+             - Reference or embed content from resources/bob-installation.md
+             - Cover all three platforms: macOS, Linux, Windows
+             - Include authentication steps
+          
+          2. For each exercise in Lab 1:
+             - Create appropriate file structure for client's tech stack
+             - Generate starter code with:
+               * Basic structure and imports
+               * Function/class signatures
+               * TODO comments indicating what to implement
+               * Comments explaining the exercise goals
+             - If generating solutions:
+               * Create complete working implementations
+               * Include proper error handling
+               * Add comments explaining the approach
+               * Ensure code follows best practices
+             - Create test files if applicable
+        </details>
+        <file_structure>
+          <directory>labs/lab1-basic-operations/starter/</directory>
+          <directory>labs/lab1-basic-operations/solution/</directory>
+        </file_structure>
+        <installation_content_source>
+          Use content from resources/bob-installation.md for the prerequisites section.
+          This ensures consistent installation instructions across all bobathons.
+        </installation_content_source>
+        <mandatory_actions>
+          <action>Use write_to_file to create starter code files</action>
+          <action>Use write_to_file to create solution files (if requested)</action>
+          <action>Use write_to_file to create README.md in starter directory</action>
+          <action>Verify each file was created successfully</action>
+        </mandatory_actions>
+      </step>
+      
+      <step number="4" priority="mandatory">
+        <action>Generate code for Lab 2</action>
+        <todo_update>Update "Generate lab code if requested (MANDATORY if code generation chosen)" to show progress: "Generating Lab 2 code..."</todo_update>
+        <enforcement>
+          You MUST actually create code files using write_to_file tool.
+          DO NOT skip this step. DO NOT just describe what should be created.
+          ACTUALLY CREATE THE FILES.
+        </enforcement>
+        <details>
+          For each exercise in Lab 2:
+          1. Create appropriate file structure for client's tech stack
+          2. Generate starter code with more complex scenarios
+          3. If generating solutions:
+             - Create complete implementations
+             - Show advanced patterns and techniques
+             - Include comprehensive error handling
+          4. Create test files demonstrating the expected behavior
+        </details>
+        <file_structure>
+          <directory>labs/lab2-advanced-workflows/starter/</directory>
+          <directory>labs/lab2-advanced-workflows/solution/</directory>
+        </file_structure>
+        <mandatory_actions>
+          <action>Use write_to_file to create starter code files</action>
+          <action>Use write_to_file to create solution files (if requested)</action>
+          <action>Use write_to_file to create README.md in starter directory</action>
+          <action>Verify each file was created successfully</action>
+        </mandatory_actions>
+      </step>
+      
+      <step number="5">
+        <action>Create README files</action>
+        <details>
+          For each lab, create a README in the starter/ directory explaining:
+          - How to set up the environment
+          - Dependencies to install
+          - How to run the code
+          - How to run tests
+          - Where to find the exercises
+        </details>
+      </step>
+      
+      <step number="6">
+        <action>Validate generated code</action>
+        <validation_checks>
+          <check>Code uses client's technology stack correctly</check>
+          <check>Starter code has clear TODOs for participants</check>
+          <check>Solutions are complete and working</check>
+          <check>Code follows best practices for the language</check>
+          <check>File structure is logical and organized</check>
+          <check>README files are clear and helpful</check>
+        </validation_checks>
+      </step>
+      
+      <step number="7" priority="mandatory">
+        <action>Confirm completion with evidence</action>
+        <todo_update>Mark "Generate lab code if requested (MANDATORY if code generation chosen)" as completed after confirming all files were created</todo_update>
+        <enforcement>
+          You MUST provide concrete evidence that files were created.
+          List the actual file paths that were created.
+          DO NOT just say "code has been generated" - SHOW what was created.
+        </enforcement>
+        <details>
+          Inform user that code has been generated and provide detailed summary:
+          - List ALL files that were created with their full paths
+          - Summarize what each file contains
+          - Confirm directory structure was created
+          - Provide next steps (e.g., review code, test it, customize further)
+        </details>
+        <example_confirmation>
+          "✅ Lab code generation complete!
+          
+          Created the following files:
+          
+          Lab 1 - Basic Operations:
+          - labs/lab1-basic-operations/starter/app.py (starter code with TODOs)
+          - labs/lab1-basic-operations/starter/README.md (setup instructions)
+          - labs/lab1-basic-operations/solution/app.py (complete solution)
+          - labs/lab1-basic-operations/solution/README.md (solution notes)
+          
+          Lab 2 - Advanced Workflows:
+          - labs/lab2-advanced-workflows/starter/refactor_example.py (starter code)
+          - labs/lab2-advanced-workflows/starter/README.md (setup instructions)
+          - labs/lab2-advanced-workflows/solution/refactor_example.py (complete solution)
+          - labs/lab2-advanced-workflows/solution/README.md (solution notes)
+          
+          Next steps:
+          1. Review the generated code
+          2. Test the code in your environment
+          3. Customize as needed for your client
+          4. Run lab validation to ensure quality"
+        </example_confirmation>
+      </step>
+
+    <workflow name="validate_lab_materials">
+      <description>Comprehensive technical validation of lab materials to ensure quality delivery</description>
+      <importance>
+        CRITICAL: Lab validation prevents negative client impressions by ensuring all materials
+        work correctly before delivery. Failed labs damage credibility and product perception.
+      </importance>
+      
+      <step number="1">
+        <action>Validate Lab Instructions</action>
+        <validation_checks>
+          <check name="completeness">
+            <description>Ensure all required sections are present</description>
+            <required_sections>
+              <section>Objectives - Clear learning goals</section>
+              <section>Prerequisites - Required setup and knowledge</section>
+              <section>Instructions - Step-by-step guidance</section>
+              <section>Exercises - Hands-on tasks with clear goals</section>
+              <section>Success Criteria - How to verify completion</section>
+              <section>Business Impact - Value metrics</section>
+            </required_sections>
+          </check>
+          
+          <check name="clarity">
+            <description>Instructions are clear and unambiguous</description>
+            <criteria>
+              <criterion>No placeholder text like [TODO] or [FILL IN]</criterion>
+              <criterion>All file paths are specific and correct</criterion>
+              <criterion>All commands are complete and executable</criterion>
+              <criterion>Technical terms are explained or linked</criterion>
+            </criteria>
+          </check>
+          
+          <check name="tech_stack_consistency">
+            <description>All examples match client's technology stack</description>
+            <criteria>
+              <criterion>Code examples use client's programming language</criterion>
+              <criterion>Framework references match client's frameworks</criterion>
+              <criterion>Tool commands match client's tools</criterion>
+              <criterion>No generic placeholders remain</criterion>
+            </criteria>
+          </check>
+        </validation_checks>
+      </step>
+      
+      <step number="2">
+        <action>Validate Generated Code (if applicable)</action>
+        <validation_checks>
+          <check name="syntax_validation">
+            <description>Verify code is syntactically correct</description>
+            <actions>
+              <action>Check for syntax errors in all code files</action>
+              <action>Verify imports and dependencies are correct</action>
+              <action>Ensure proper indentation and formatting</action>
+              <action>Validate file extensions match language</action>
+            </actions>
+          </check>
+          
+          <check name="starter_code_quality">
+            <description>Starter code is appropriate for participants</description>
+            <criteria>
+              <criterion>Has clear TODO comments indicating what to implement</criterion>
+              <criterion>Includes function/class signatures</criterion>
+              <criterion>Has helpful comments explaining goals</criterion>
+              <criterion>Provides enough structure without giving away solution</criterion>
+              <criterion>Includes example usage or test cases</criterion>
+            </criteria>
+          </check>
+          
+          <check name="solution_code_quality">
+            <description>Solution code is complete and demonstrates best practices</description>
+            <criteria>
+              <criterion>Code executes without errors</criterion>
+              <criterion>Implements all required functionality</criterion>
+              <criterion>Follows language/framework best practices</criterion>
+              <criterion>Includes proper error handling</criterion>
+              <criterion>Has clear comments explaining approach</criterion>
+              <criterion>Passes all test cases (if tests exist)</criterion>
+            </criteria>
+          </check>
+          
+          <check name="executability">
+            <description>Code can actually be run by participants</description>
+            <actions>
+              <action>Verify all dependencies are listed in README</action>
+              <action>Check that setup instructions are complete</action>
+              <action>Ensure file paths are correct and relative</action>
+              <action>Validate that commands in instructions work</action>
+            </actions>
+            <note>
+              If possible, attempt to execute the code to verify it works.
+              At minimum, perform static analysis to catch obvious issues.
+            </note>
+          </check>
+        </validation_checks>
+      </step>
+      
+      <step number="3">
+        <action>Validate Lab Timing</action>
+        <validation_checks>
+          <check name="realistic_duration">
+            <description>Lab duration is achievable for target audience</description>
+            <guidelines>
+              <guideline>Lab 1 (Basic): 20-30 minutes for beginners</guideline>
+              <guideline>Lab 2 (Advanced): 25-40 minutes for intermediate</guideline>
+              <guideline>Lab 3 (Client-Specific): 40-90 minutes depending on complexity</guideline>
+            </guidelines>
+            <warning>
+              If exercises seem too complex for allocated time, flag for review.
+              Better to have participants succeed in simpler exercises than fail at complex ones.
+            </warning>
+          </check>
+          
+          <check name="time_buffer">
+            <description>Include buffer time for questions and troubleshooting</description>
+            <recommendation>
+              Add 20-30% buffer to estimated completion time to account for:
+              - Questions and clarifications
+              - Technical issues
+              - Varying skill levels
+              - Discussion and learning moments
+            </recommendation>
+          </check>
+        </validation_checks>
+      </step>
+      
+      <step number="4">
+        <action>Validate Lab Dependencies</action>
+        <validation_checks>
+          <check name="prerequisite_check">
+            <description>All prerequisites are clearly stated and achievable</description>
+            <criteria>
+              <criterion>Required software versions are specified</criterion>
+              <criterion>Installation instructions are provided or linked</criterion>
+              <criterion>Environment setup is documented</criterion>
+              <criterion>Access requirements are clear (APIs, databases, etc.)</criterion>
+            </criteria>
+          </check>
+          
+          <check name="dependency_availability">
+            <description>All required dependencies are accessible</description>
+            <criteria>
+              <criterion>External libraries/packages are publicly available</criterion>
+              <criterion>API endpoints are accessible (or mocked)</criterion>
+              <criterion>Sample data files are included or generated</criterion>
+              <criterion>No proprietary or restricted resources required</criterion>
+            </criteria>
+          </check>
+        </validation_checks>
+      </step>
+      
+      <step number="5">
+        <action>Validate Lab Progression</action>
+        <validation_checks>
+          <check name="difficulty_progression">
+            <description>Labs progress logically from simple to complex</description>
+            <criteria>
+              <criterion>Lab 1 builds foundational skills</criterion>
+              <criterion>Lab 2 builds on Lab 1 concepts</criterion>
+              <criterion>Lab 3 applies skills to real scenarios</criterion>
+              <criterion>No sudden jumps in complexity</criterion>
+            </criteria>
+          </check>
+          
+          <check name="concept_building">
+            <description>Each lab reinforces and extends previous learning</description>
+            <criteria>
+              <criterion>New concepts are introduced gradually</criterion>
+              <criterion>Previous concepts are reinforced</criterion>
+              <criterion>Clear connections between labs</criterion>
+            </criteria>
+          </check>
+        </validation_checks>
+      </step>
+      
+      <step number="6">
+        <action>Perform Final Quality Check</action>
+        <validation_checks>
+          <check name="spelling_and_grammar">
+            <description>All text is professional and error-free</description>
+            <actions>
+              <action>Check for spelling errors</action>
+              <action>Verify grammar and punctuation</action>
+              <action>Ensure consistent terminology</action>
+              <action>Check for broken links</action>
+            </actions>
+          </check>
+          
+          <check name="formatting_consistency">
+            <description>Formatting is consistent across all labs</description>
+            <criteria>
+              <criterion>Consistent heading styles</criterion>
+              <criterion>Consistent code block formatting</criterion>
+              <criterion>Consistent numbering/bullet styles</criterion>
+              <criterion>Consistent file naming conventions</criterion>
+            </criteria>
+          </check>
+          
+          <check name="accessibility">
+            <description>Materials are accessible to all participants</description>
+            <criteria>
+              <criterion>Clear, readable fonts and sizes</criterion>
+              <criterion>Code examples have good contrast</criterion>
+              <criterion>Instructions don't rely solely on color</criterion>
+              <criterion>Alternative text for images/diagrams</criterion>
+            </criteria>
+          </check>
+        </validation_checks>
+      </step>
+      
+      <step number="7">
+        <action>Generate Validation Report</action>
+        <report_structure>
+          <section name="summary">
+            <item>Overall validation status (PASS/FAIL/NEEDS REVIEW)</item>
+            <item>Number of issues found by severity</item>
+            <item>Critical issues that must be fixed</item>
+          </section>
+          
+          <section name="lab_by_lab_results">
+            <lab name="Lab 1">
+              <status>PASS/FAIL/NEEDS REVIEW</status>
+              <issues>List of issues found</issues>
+              <recommendations>Suggested fixes</recommendations>
+            </lab>
+            <lab name="Lab 2">
+              <status>PASS/FAIL/NEEDS REVIEW</status>
+              <issues>List of issues found</issues>
+              <recommendations>Suggested fixes</recommendations>
+            </lab>
+            <lab name="Lab 3">
+              <status>PASS/FAIL/NEEDS REVIEW</status>
+              <issues>List of issues found</issues>
+              <recommendations>Suggested fixes</recommendations>
+            </lab>
+          </section>
+          
+          <section name="critical_issues">
+            <description>Issues that MUST be fixed before delivery</description>
+            <examples>
+              <example>Syntax errors in code</example>
+              <example>Missing prerequisites</example>
+              <example>Broken file paths</example>
+              <example>Incomplete instructions</example>
+              <example>Unrealistic time estimates</example>
+            </examples>
+          </section>
+          
+          <section name="recommendations">
+            <description>Suggested improvements (non-blocking)</description>
+            <examples>
+              <example>Additional examples for clarity</example>
+              <example>More detailed explanations</example>
+              <example>Additional test cases</example>
+              <example>Enhanced error messages</example>
+            </examples>
+          </section>
+        </report_structure>
+      </step>
+      
+      <step number="8">
+        <action>Offer to Fix Issues</action>
+        <ask_followup_question>
+          <question>Validation complete. I found [X] issues ([Y] critical). Would you like me to fix them?</question>
+          <follow_up>
+            <suggest>Yes, fix all critical issues automatically</suggest>
+            <suggest>Show me the issues first, then I'll decide</suggest>
+            <suggest>Fix critical issues, show me recommendations</suggest>
+            <suggest>I'll fix them manually</suggest>
+          </follow_up>
+        </ask_followup_question>
+        <details>
+          If user chooses to have Bob fix issues:
+          1. Fix all critical issues automatically
+          2. Apply recommended improvements if requested
+          3. Re-run validation to confirm fixes
+          4. Provide summary of changes made
+        </details>
+      </step>
+      
+      <step number="9">
+        <action>Final Confirmation</action>
+        <details>
+          Once all critical issues are resolved:
+          1. Confirm labs are ready for delivery
+          2. Provide checklist of what was validated
+          3. Remind seller to test labs in client's environment if possible
+          4. Suggest doing a dry run before actual delivery
+        </details>
+        <seller_checklist>
+          <item>✅ All lab instructions are complete and clear</item>
+          <item>✅ Generated code is syntactically correct</item>
+          <item>✅ Starter code has clear TODOs</item>
+          <item>✅ Solutions are complete and working</item>
+          <item>✅ Dependencies are documented</item>
+          <item>✅ Time estimates are realistic</item>
+          <item>✅ Labs progress logically</item>
+          <item>✅ No placeholder text remains</item>
+          <item>✅ Tech stack is consistent throughout</item>
+          <item>⚠️ Recommended: Test in client's environment before delivery</item>
+        </seller_checklist>
+      </step>
+    </workflow>
+    </workflow>
+
+    <workflow name="create_client_scenarios">
+      <description>Create Lab 3 exercises based on client use cases</description>
+      
+      <step number="1" priority="mandatory">
+        <action>Determine Lab 3 code source</action>
+        <required>true</required>
+        <todo_update>Mark "Determine Lab 3 code source" as completed after user specifies code source</todo_update>
+        <ask_followup_question>
+          <question>For Lab 3 client-specific scenarios, what code will participants work with?</question>
+          <follow_up>
+            <suggest>Use client's actual codebase (recommended - most realistic and valuable)</suggest>
+            <suggest>Generate sample code based on client's tech stack and use cases</suggest>
+            <suggest>Use a combination - generated starter code with references to their actual code</suggest>
+            <suggest>Let me specify per use case</suggest>
+          </follow_up>
+        </ask_followup_question>
+        <details>
+          This question MUST ALWAYS be asked - never skip or assume.
+          
+          Lab 3 is most effective when participants work with their actual codebase because:
+          - Immediate applicability to their daily work
+          - Real business problems and constraints
+          - Authentic learning experience
+          - Direct ROI demonstration
+          
+          However, generated code may be needed if:
+          - Client's codebase is not accessible
+          - Security/confidentiality concerns
+          - Codebase is too complex for time available
+        </details>
+        <default_behavior>
+          If user does not provide a clear answer, DEFAULT to using client's actual codebase.
+          This provides the most value and realistic experience.
+        </default_behavior>
+      </step>
+      
+      <step number="2">
+        <action>Read configuration and use cases</action>
+        <details>
+          Read bobathon-config.yaml focusing on:
+          - Use cases (especially high priority)
+          - Technology stack
+          - Available time for Lab 3
+        </details>
+      </step>
+      
+      <step number="2">
+        <action>Design scenarios for each use case</action>
+        <scenario_structure>
+          <element>Use case name and priority</element>
+          <element>Business value statement</element>
+          <element>Realistic scenario description</element>
+          <element>Step-by-step tasks</element>
+          <element>Bob workflow examples</element>
+          <element>Success criteria</element>
+          <element>Estimated time</element>
+        </scenario_structure>
+      </step>
+      
+      <step number="3">
+        <action>Add business value to each scenario</action>
+        <details>
+          For each Lab 3 scenario, include quantifiable business value:
+          - ROI metrics specific to the use case
+          - Time/cost savings estimates
+          - Quality/security improvements
+          - Business outcome success metrics
+          
+          Example format:
+          "Business Value: Reduces API development time by 40%, saving 8 hours/week per developer.
+          Automated testing catches 85% of integration issues before production."
+        </details>
+      </step>
+      
+      <step number="4">
+        <action>Ensure timing fits</action>
+        <details>
+          Lab 3 is typically 90 minutes. Ensure all scenarios fit within time:
+          - High priority: 30-45 minutes each
+          - Medium priority: 20-30 minutes each
+          - Include buffer time for questions
+        </details>
+      </step>
+      
+      <step number="5" priority="mandatory">
+        <action>Include Bob differentiators in Lab 3</action>
+        <required>true</required>
+        <todo_update>Mark "Include Bob differentiators in Lab 3" as completed after adding differentiators to scenarios</todo_update>
+        <details>
+          Lab 3 MUST highlight Bob's key differentiators that set it apart from other AI coding assistants.
+          These should be woven into the scenarios naturally, not as a separate section.
+          
+          Key differentiators to emphasize:
+          - Agentic workflows: Bob can execute multi-step tasks autonomously
+          - Tool integration: Direct access to terminal, file system, and development tools
+          - Context awareness: Understands entire codebase, not just current file
+          - Mode specialization: Different modes for different tasks (code, debug, plan, etc.)
+          - MCP server integration: Extensible with custom tools and capabilities
+          
+          For each Lab 3 scenario, identify which differentiators are most relevant
+          and design exercises that showcase them in action.
+        </details>
+        <implementation>
+          <guideline>Don't just mention features - demonstrate value through exercises</guideline>
+          <guideline>Show how Bob's approach differs from chat-based assistants</guideline>
+          <guideline>Include before/after comparisons where relevant</guideline>
+          <guideline>Tie differentiators to business outcomes</guideline>
+        </implementation>
+      </step>
+      
+      <step number="6">
+        <action>Update Lab 3 instructions</action>
+        <details>
+          Replace template scenarios with client-specific ones, maintaining
+          the structure but using real business problems and tech stack.
+        </details>
+      </step>
+    </workflow>
+
+    <workflow name="setup_business_value_tracking">
+      <description>Configure business value measurement and data collection</description>
+      
+      <step number="1">
+        <action>Explain business value tracking</action>
+        <details>
+          Explain that tracking business value helps demonstrate ROI to stakeholders
+          and improves future bobathons. This involves collecting feedback at multiple
+          points to measure both perceived and actual value.
+        </details>
+      </step>
+      
+      <step number="2">
+        <action>Ask about collection strategy</action>
+        <ask_followup_question>
+          <question>How would you like to collect business value data from participants?</question>
+          <follow_up>
+            <suggest>After each lab + end of bobathon + 2-4 week follow-up (recommended - comprehensive)</suggest>
+            <suggest>After each lab + end of bobathon (good balance)</suggest>
+            <suggest>End of bobathon only (minimal but still valuable)</suggest>
+            <suggest>No formal tracking (not recommended)</suggest>
+          </follow_up>
+        </ask_followup_question>
+      </step>
+      
+      <step number="3">
+        <action>Ask about collection tools</action>
+        <ask_followup_question>
+          <question>What tool will you use to collect feedback?</question>
+          <follow_up>
+            <suggest>Google Forms (simple, free, easy to analyze)</suggest>
+            <suggest>Microsoft Forms (enterprise integration)</suggest>
+            <suggest>Slido/Mentimeter (real-time, interactive)</suggest>
+            <suggest>Custom survey platform</suggest>
+          </follow_up>
+        </ask_followup_question>
+      </step>
+      
+      <step number="4">
+        <action>Generate survey questions</action>
+        <details>
+          Based on collection strategy, generate appropriate questions:
+          
+          After Each Lab (2-3 minutes, 5-7 questions):
+          - "How much time would this save you weekly?" (hours)
+          - "Rate ease of implementation" (1-5 scale)
+          - "Likelihood you'll use this in your work" (1-5 scale)
+          - "One key takeaway from this lab?" (open text)
+          
+          End of Bobathon (10-15 minutes):
+          - "Rank features by business value to your team" (drag-drop)
+          - "Estimated productivity gain from using Bob" (percentage)
+          - "Which use case will you implement first?" (multiple choice)
+          - "What's your 30/60/90 day adoption plan?" (open text)
+          - "Biggest barrier to adoption?" (multiple choice + other)
+          
+          Post-Bobathon Follow-up (2-4 weeks, 10 minutes):
+          - "Have you started using Bob?" (yes/no)
+          - "Actual time savings vs. expected" (comparison)
+          - "Adoption rate on your team" (percentage)
+          - "Success story or challenge to share?" (open text)
+          - "Measured ROI or business impact" (open text)
+        </details>
+      </step>
+      
+      <step number="5">
+        <action>Add tracking configuration to bobathon-config.yaml</action>
+        <details>
+          Add business_value_tracking section with:
+          - Collection points enabled
+          - Survey tool information
+          - Links to survey forms (if available)
+          - Metrics to track
+        </details>
+        <config_template>
+          business_value_tracking:
+            enabled: true
+            collection_points:
+              after_each_lab: true
+              end_of_bobathon: true
+              post_bobathon_followup: true
+              followup_timing: "2-4 weeks"
+            survey_tool: "Google Forms"
+            survey_links:
+              lab1: "[To be created]"
+              lab2: "[To be created]"
+              lab3: "[To be created]"
+              end_of_bobathon: "[To be created]"
+              followup: "[To be created]"
+            metrics_to_track:
+              - time_savings
+              - quality_improvements
+              - security_enhancements
+              - cost_savings
+              - adoption_rate
+              - ease_of_use
+              - likelihood_to_adopt
+        </config_template>
+      </step>
+      
+      <step number="6">
+        <action>Provide survey creation guidance</action>
+        <details>
+          Offer to:
+          1. Generate complete survey questions in a document
+          2. Provide tips for survey design
+          3. Suggest how to analyze results
+          4. Create a results dashboard template
+        </details>
+      </step>
+    </workflow>
+    
+    <workflow name="validate_bobathon">
+      <description>Validate bobathon materials for completeness and consistency</description>
+      
+      <validation_checklist>
+        <category name="configuration">
+          <check>All required fields filled in bobathon-config.yaml</check>
+          <check>Use cases have priorities and time estimates</check>
+          <check>Schedule timing adds up correctly</check>
+          <check>Tech stack is complete and consistent</check>
+          <check>Business value tracking is configured (if enabled)</check>
+        </category>
+        
+        <category name="labs">
+          <check>Lab 1 uses client's tech stack</check>
+          <check>Lab 2 uses client's tech stack</check>
+          <check>Lab 3 addresses client's use cases</check>
+          <check>All labs have clear objectives</check>
+          <check>All labs have Business Impact sections</check>
+          <check>Real-time value indicators embedded in exercises</check>
+          <check>Timing is realistic for each lab</check>
+          <check>Starter code exists if code generation was requested</check>
+          <check>Solution code exists if solution generation was requested</check>
+          <check>Generated code matches client's tech stack</check>
+          <check>README files exist in starter directories if code was generated</check>
+        </category>
+        
+        <category name="schedule">
+          <check>Total time matches configuration</check>
+          <check>All use cases are addressed</check>
+          <check>Breaks are included</check>
+          <check>Buffer time for questions</check>
+        </category>
+        
+        <category name="consistency">
+          <check>Examples use same tech stack throughout</check>
+          <check>Terminology is consistent</check>
+          <check>References to tools/frameworks are accurate</check>
+          <check>No generic placeholders remain</check>
+        </category>
+      </validation_checklist>
+      
+      <step number="1">
+        <action>Read all bobathon files</action>
+        <files_to_check>
+          <file>bobathon-config.yaml</file>
+          <file>labs/lab1-basic-operations/instructions.md</file>
+          <file>labs/lab2-advanced-workflows/instructions.md</file>
+          <file>labs/lab3-client-specific/instructions.md</file>
+          <file>schedule/detailed-agenda.md</file>
+        </files_to_check>
+      </step>
+      
+      <step number="2">
+        <action>Run validation checks</action>
+        <details>
+          Go through each category in the validation checklist and identify
+          any issues, gaps, or inconsistencies.
+        </details>
+      </step>
+      
+      <step number="3">
+        <action>Report findings</action>
+        <details>
+          Provide a clear report of:
+          - What's complete and correct
+          - What needs attention
+          - Specific recommendations for fixes
+        </details>
+      </step>
+      
+      <step number="4">
+        <action>Offer to fix issues</action>
+        <details>
+          Ask if they want you to fix identified issues or if they prefer
+          to make changes manually.
+        </details>
+      </step>
+    </workflow>
+  </main_workflows>
+
+  <interaction_guidelines>
+    <guideline name="always_ask_questions">
+      Use ask_followup_question extensively to gather information interactively.
+      Provide 2-4 specific, actionable suggestions for each question.
+    </guideline>
+    
+    <guideline name="validate_before_proceeding">
+      Always validate information before moving to the next phase.
+      Confirm understanding with the user.
+    </guideline>
+    
+    <guideline name="be_specific_and_helpful">
+      Provide concrete examples and suggestions based on the client's industry
+      and tech stack. Don't use generic placeholders.
+    </guideline>
+    
+    <guideline name="explain_the_why">
+      When asking questions or making suggestions, explain why the information
+      is needed and how it will be used.
+    </guideline>
+    
+    <guideline name="offer_choices">
+      Give users clear options at decision points. Make it easy to choose
+      without requiring extensive typing.
+    </guideline>
+  </interaction_guidelines>
+
+
+    <workflow name="save_bobathon">
+      <description>Save completed bobathon with multiple options</description>
+      
+      <step number="1">
+        <action>Confirm bobathon is complete and validated</action>
+        <details>
+          Before offering save options, ensure:
+          - bobathon-config.yaml is complete
+          - All labs are customized
+          - Validation has passed
+          - No placeholders remain
+        </details>
+      </step>
+      
+      <step number="2">
+        <action>Ask about updating external resources and contact information</action>
+        <ask_followup_question>
+          <question>Before saving, would you like to update the external resources (resources/external-links.md) and after-bobathon support contact information (resources/troubleshooting.md)?</question>
+          <follow_up>
+            <suggest>I'll edit them myself (default - files have placeholders you can fill in)</suggest>
+            <suggest>Have Bob update them by asking me for the information</suggest>
+            <suggest>Skip - keep the template placeholders for now</suggest>
+          </follow_up>
+        </ask_followup_question>
+        <details>
+          These files contain:
+          - external-links.md: Bob documentation links, company-specific resources, support channels
+          - troubleshooting.md: After-bobathon support contact information (email, Slack, office hours)
+          
+          Both files have placeholders marked with [Link], [URL], [Contact info] that should be customized.
+        </details>
+      </step>
+      
+      <step number="3">
+        <action>Handle resource update choice</action>
+        
+        <option name="bob_updates">
+          <substep number="1">
+            <action>Collect Bob documentation links</action>
+            <ask_followup_question>
+              <question>What are your Bob documentation URLs? (Provide what you know, I'll handle unknowns)</question>
+              <follow_up>
+                <suggest>Main docs: [URL], API reference: [URL], Tool reference: [URL]</suggest>
+                <suggest>I don't have these yet - leave placeholders</suggest>
+                <suggest>Use generic Bob documentation links</suggest>
+              </follow_up>
+            </ask_followup_question>
+          </substep>
+          
+          <substep number="2">
+            <action>Collect company-specific resources</action>
+            <ask_followup_question>
+              <question>Do you have company-specific resources to add? (Internal wikis, repos, style guides, etc.)</question>
+              <follow_up>
+                <suggest>Yes, let me provide the links</suggest>
+                <suggest>No, remove those sections</suggest>
+                <suggest>Leave placeholders for now</suggest>
+              </follow_up>
+            </ask_followup_question>
+          </substep>
+          
+          <substep number="3">
+            <action>Collect support contact information</action>
+            <ask_followup_question>
+              <question>What are the after-bobathon support contact details?</question>
+              <follow_up>
+                <suggest>Email: [email], Slack: [channel], Office hours: [schedule]</suggest>
+                <suggest>I don't know yet - leave placeholders</suggest>
+                <suggest>Remove the support section</suggest>
+              </follow_up>
+            </ask_followup_question>
+          </substep>
+          
+          <substep number="4">
+            <action>Update external-links.md</action>
+            <details>
+              Replace placeholders with provided information:
+              - Bob documentation links (lines 8-11)
+              - Company-specific resources if provided
+              - Support contact info (lines 301-303)
+              
+              For unknown items, offer to:
+              - Leave placeholder with [URL] or [Link]
+              - Delete the line/section entirely
+              - Add a TODO comment
+            </details>
+          </substep>
+          
+          <substep number="5">
+            <action>Update troubleshooting.md</action>
+            <details>
+              Update the "Getting Support" section (lines 520-524):
+              - After bobathon support email
+              - Slack channel
+              - Documentation URL
+              - Office hours schedule
+              
+              For unknown items, offer same options as external-links.md
+            </details>
+          </substep>
+          
+          <substep number="6">
+            <action>Confirm updates complete</action>
+            <message>
+              ✅ Resource files updated!
+              
+              Updated:
+              - resources/external-links.md: [summary of changes]
+              - resources/troubleshooting.md: [summary of changes]
+              
+              Remaining placeholders: [count and list if any]
+            </message>
+          </substep>
+        </option>
+        
+        <option name="user_edits">
+          <action>Provide guidance for manual editing</action>
+          <message>
+            📝 You can edit these files manually:
+            
+            resources/external-links.md:
+            - Lines 8-11: Bob documentation links
+            - Lines 301-303: Emergency support contacts
+            - Search for [Link] or [URL] to find other placeholders
+            
+            resources/troubleshooting.md:
+            - Lines 520-524: After-bobathon support information
+            
+            I'll proceed with saving the bobathon now.
+          </message>
+        </option>
+        
+        <option name="skip">
+          <action>Continue without updating</action>
+          <message>
+            ⏭️ Skipping resource updates. Template placeholders remain in:
+            - resources/external-links.md
+            - resources/troubleshooting.md
+            
+            You can update these later before delivery.
+          </message>
+        </option>
+      </step>
+      
+      <step number="4">
+        <action>Ask how to save the bobathon</action>
+        <ask_followup_question>
+          <question>✅ Bobathon for {client_name} is complete and validated! How would you like to save it?</question>
+          <follow_up>
+            <suggest>Export to a new directory (../{client-slug}-bobathon/) - clean, standalone bobathon</suggest>
+            <suggest>Prepare for pushing to a new repository (I'll provide the URL)</suggest>
+            <suggest>Create a new branch in this repo (bobathon-{client-slug}) - keep with template</suggest>
+            <suggest>Just commit to current branch - I'll handle git myself</suggest>
+          </follow_up>
+        </ask_followup_question>
+      </step>
+      
+      <step number="3">
+        <action>Execute chosen save method</action>
+        
+        <option name="export_to_directory">
+          <substep number="1">
+            <action>Generate client slug from name</action>
+            <details>
+              Convert client name to slug: "Acme Corp" → "acme-corp"
+              Use for directory name: ../acme-corp-bobathon/
+            </details>
+          </substep>
+          
+          <substep number="2">
+            <action>Ask about template file cleanup</action>
+            <ask_followup_question>
+              <question>Should I remove template-specific files to create a clean bobathon package?</question>
+              <follow_up>
+                <suggest>Yes, remove .bob/, .bobmodes, examples/ (recommended for client delivery)</suggest>
+                <suggest>No, keep everything (allows future template updates)</suggest>
+              </follow_up>
+            </ask_followup_question>
+          </substep>
+          
+          <substep number="3">
+            <action>Create export directory and copy files</action>
+            <files_to_copy>
+              <file>bobathon-config.yaml</file>
+              <file>README.md</file>
+              <file>schedule/</file>
+              <file>labs/</file>
+              <file>resources/</file>
+            </files_to_copy>
+            <files_to_exclude_if_cleanup>
+              <file>.bob/</file>
+              <file>.bobmodes</file>
+              <file>examples/</file>
+              <file>BOBATHON_BUILDER_GUIDE.md</file>
+              <file>SELLER_README.md</file>
+              <file>PROJECT_SUMMARY.md</file>
+              <file>SLIDE_SUMMARY.md</file>
+            </files_to_exclude_if_cleanup>
+            <commands>
+              <command>mkdir ../{client-slug}-bobathon</command>
+              <command>Copy files to new directory</command>
+            </commands>
+          </substep>
+          
+          <substep number="4">
+            <action>Provide next steps</action>
+            <message>
+              ✅ Bobathon exported to ../{client-slug}-bobathon/
+              
+              Next steps:
+              1. cd ../{client-slug}-bobathon
+              2. git init
+              3. git add .
+              4. git commit -m "Initial bobathon for {client_name}"
+              5. git remote add origin [your-repo-url]
+              6. git push -u origin main
+              
+              The bobathon is ready to deliver!
+            </message>
+          </substep>
+        </option>
+        
+        <option name="prepare_for_new_repo">
+          <substep number="1">
+            <action>Ask for target repository URL</action>
+            <ask_followup_question>
+              <question>What's the URL of the target repository?</question>
+              <follow_up>
+                <suggest>https://github.com/myorg/{client-slug}-bobathon.git</suggest>
+                <suggest>git@github.com:myorg/{client-slug}-bobathon.git</suggest>
+                <suggest>Let me type the exact URL</suggest>
+              </follow_up>
+            </ask_followup_question>
+          </substep>
+          
+          <substep number="2">
+            <action>Ask about template file cleanup</action>
+            <ask_followup_question>
+              <question>Should I remove template-specific files before pushing?</question>
+              <follow_up>
+                <suggest>Yes, remove .bob/, .bobmodes, examples/ (clean bobathon)</suggest>
+                <suggest>No, keep everything (allows template updates)</suggest>
+              </follow_up>
+            </ask_followup_question>
+          </substep>
+          
+          <substep number="3">
+            <action>Create branch and commit</action>
+            <commands>
+              <command>git checkout -b bobathon-{client-slug}</command>
+              <command>If cleanup: remove template files</command>
+              <command>git add .</command>
+              <command>git commit -m "Bobathon for {client_name}"</command>
+            </commands>
+          </substep>
+          
+          <substep number="4">
+            <action>Provide push commands</action>
+            <message>
+              ✅ Branch created and committed!
+              
+              To push to your new repository, run:
+              
+              git remote add {client-slug} {repo_url}
+              git push {client-slug} bobathon-{client-slug}:main
+              
+              Or if you want to push as a different branch:
+              git push {client-slug} bobathon-{client-slug}:bobathon
+            </message>
+          </substep>
+        </option>
+        
+        <option name="create_branch">
+          <substep number="1">
+            <action>Create and switch to new branch</action>
+            <commands>
+              <command>git checkout -b bobathon-{client-slug}</command>
+            </commands>
+          </substep>
+          
+          <substep number="2">
+            <action>Commit all changes</action>
+            <commands>
+              <command>git add .</command>
+              <command>git commit -m "Bobathon for {client_name}"</command>
+            </commands>
+          </substep>
+          
+          <substep number="3">
+            <action>Confirm completion</action>
+            <message>
+              ✅ Branch 'bobathon-{client-slug}' created and committed!
+              
+              The bobathon is saved in this repository. You can:
+              - Switch back to main: git checkout main
+              - View all bobathons: git branch
+              - Switch to this bobathon: git checkout bobathon-{client-slug}
+              - Push to remote: git push origin bobathon-{client-slug}
+              
+              To create another bobathon, switch back to main and start fresh.
+            </message>
+          </substep>
+        </option>
+        
+        <option name="commit_current_branch">
+          <substep number="1">
+            <action>Commit to current branch</action>
+            <commands>
+              <command>git add .</command>
+              <command>git commit -m "Bobathon for {client_name}"</command>
+            </commands>
+          </substep>
+          
+          <substep number="2">
+            <action>Confirm completion</action>
+            <message>
+              ✅ Changes committed to current branch!
+              
+              You can now manage the git workflow as needed:
+              - Push to remote
+              - Create branches
+              - Tag the commit
+              
+              The bobathon is ready to deliver!
+            </message>
+          </substep>
+        </option>
+      </step>
+      
+      <step number="5">
+        <action>Offer to create another bobathon</action>
+        <ask_followup_question>
+          <question>Would you like to create another bobathon?</question>
+          <follow_up>
+            <suggest>Yes, start a new bobathon from scratch</suggest>
+            <suggest>Yes, start from an example configuration</suggest>
+            <suggest>No, I'm done for now</suggest>
+          </follow_up>
+        </ask_followup_question>
+      </step>
+    </workflow>
+  <completion_criteria>
+    <criterion>bobathon-config.yaml is complete and valid</criterion>
+    <criterion>All labs are customized for client's tech stack</criterion>
+    <criterion>Lab 3 addresses client's specific use cases</criterion>
+    <criterion>Schedule matches available time</criterion>
+    <criterion>All materials are consistent and ready to use</criterion>
+  </completion_criteria>
+</bobathon_builder_workflow>
+
+<!-- Made with Bob -->

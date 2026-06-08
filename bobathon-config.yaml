@@ -1,0 +1,269 @@
+# Bob vs Cursor Comparison Workshop Configuration
+# A comprehensive 3-hour workshop comparing Bob and Cursor AI coding assistants
+
+metadata:
+  version: "1.0"
+  created_date: "2026-05-27"
+  last_updated: "2026-05-27"
+  opportunity_number: "N/A - Skipped tracking"
+
+client:
+  name: "Enterprise Client Event"
+  market: "Mixed Industries"
+  industry: "Technology / Software Development"
+  contact:
+    primary: "[Event Organizer Name]"
+    email: "[organizer@company.com]"
+    phone: "[Contact Phone]"
+  
+delivery:
+  format: "hybrid"  # Facilitated with self-paced components
+  facilitator: "[Your Name]"
+  date: "[TBD]"
+  timezone: "America/Toronto"
+  virtual_platform: "[Zoom/Teams/WebEx]"
+
+seller_contact:
+  name: "[Seller Name - To Be Updated]"
+  email: "[seller@ibm.com]"
+  phone: "[Seller Phone]"
+  organization: "IBM"
+
+technologies:
+  primary_language: "Python"
+  secondary_language: "JavaScript"
+  frameworks:
+    - "Flask"
+    - "FastAPI"
+    - "Express.js"
+    - "React"
+  tools:
+    - "Git"
+    - "VS Code"
+    - "npm"
+    - "pip"
+  infrastructure: "Cloud-agnostic"
+  version_control: "Git"
+  ide_preferences:
+    - "VS Code"
+    - "PyCharm"
+    - "WebStorm"
+
+participants:
+  expected_count: 50-100
+  roles:
+    - "Software Developers"
+    - "Engineering Managers"
+    - "Technical Leads"
+    - "DevOps Engineers"
+  skill_levels:
+    - level: "intermediate"
+      percentage: 60
+    - level: "senior"
+      percentage: 30
+    - level: "junior"
+      percentage: 10
+
+schedule:
+  total_duration_hours: 3
+  format: "condensed_half_day"
+  sessions:
+    - name: "Introduction & Setup"
+      duration_minutes: 15
+      topics:
+        - "Workshop objectives and agenda"
+        - "Bob vs Cursor: Overview of key differences"
+        - "Environment setup verification"
+    
+    - name: "Lab 1: Basic Operations Comparison"
+      duration_minutes: 60
+      topics:
+        - "Bob's agentic workflows vs Cursor's chat interface"
+        - "Tool integration capabilities"
+        - "Hands-on: Basic code generation and editing"
+      lab: "lab1-basic-operations"
+      exercises_duration: 40
+    
+    - name: "Lab 2: Advanced Workflows"
+      duration_minutes: 40
+      topics:
+        - "Multi-file refactoring comparison"
+        - "Context awareness and codebase understanding"
+        - "Terminal and file system integration"
+      lab: "lab2-advanced-workflows"
+      exercises_duration: 25
+    
+    - name: "Lab 3: Bob vs Cursor Head-to-Head"
+      duration_minutes: 50
+      topics:
+        - "Agentic workflows: Bob's autonomous execution"
+        - "Tool integration: Direct system access"
+        - "Context awareness: Full codebase understanding"
+        - "Complementary usage: When to use each tool"
+      lab: "lab3-client-specific"
+      exercises_duration: 40
+    
+    - name: "Wrap-up & Q&A"
+      duration_minutes: 15
+      topics:
+        - "Key differentiators summary"
+        - "Best practices for using Bob and Cursor together"
+        - "ROI and business value discussion"
+        - "Next steps and resources"
+
+use_cases:
+  - name: "Agentic Workflows"
+    description: "Demonstrate Bob's ability to autonomously execute multi-step tasks vs Cursor's chat-based approach"
+    priority: "high"
+    estimated_time: "15 minutes"
+    bob_advantage: "Autonomous execution, no manual intervention needed"
+    cursor_limitation: "Requires manual copy-paste and step-by-step guidance"
+    
+  - name: "Tool Integration & System Access"
+    description: "Show Bob's direct terminal, file system, and development tool access vs Cursor's limitations"
+    priority: "high"
+    estimated_time: "15 minutes"
+    bob_advantage: "Direct execution of commands, file operations, git operations"
+    cursor_limitation: "Limited to code suggestions, no system access"
+    
+  - name: "Context Awareness & Codebase Understanding"
+    description: "Compare Bob's full codebase context vs Cursor's file-focused approach"
+    priority: "high"
+    estimated_time: "10 minutes"
+    bob_advantage: "Understands entire project structure, cross-file dependencies"
+    cursor_limitation: "Primarily focused on current file and immediate context"
+    
+  - name: "Complementary Usage Patterns"
+    description: "Demonstrate when to use Bob vs Cursor and how they complement each other"
+    priority: "medium"
+    estimated_time: "10 minutes"
+    use_bob_for: "Complex refactoring, multi-file changes, system operations, autonomous workflows"
+    use_cursor_for: "Quick inline suggestions, rapid prototyping, single-file edits"
+
+labs:
+  - id: "lab1"
+    name: "Basic Operations Comparison"
+    duration_minutes: 40
+    difficulty: "beginner"
+    objectives:
+      - "Understand Bob's agentic workflow model"
+      - "Compare code generation approaches"
+      - "Experience tool integration differences"
+    prerequisites:
+      - "Bob installed and authenticated"
+      - "Cursor installed (optional for comparison)"
+      - "Python 3.8+ and Node.js 16+ installed"
+      - "Basic understanding of Python and JavaScript"
+    deliverables:
+      - "Simple Python Flask API created with Bob"
+      - "JavaScript Express API created with Bob"
+      - "Comparison notes on workflow differences"
+    
+  - id: "lab2"
+    name: "Advanced Workflows"
+    duration_minutes: 25
+    difficulty: "intermediate"
+    objectives:
+      - "Experience multi-file refactoring with Bob"
+      - "Understand context awareness capabilities"
+      - "Compare terminal and file system integration"
+    prerequisites:
+      - "Completion of Lab 1"
+      - "Understanding of refactoring concepts"
+    deliverables:
+      - "Refactored codebase with improved structure"
+      - "Automated test suite additions"
+      - "Documentation updates across multiple files"
+    
+  - id: "lab3"
+    name: "Bob vs Cursor Head-to-Head Comparison"
+    duration_minutes: 40
+    difficulty: "intermediate"
+    objectives:
+      - "Experience Bob's key differentiators in action"
+      - "Understand when to use Bob vs Cursor"
+      - "Learn complementary usage patterns"
+    prerequisites:
+      - "Completion of Labs 1 and 2"
+      - "Familiarity with both tools"
+    deliverables:
+      - "Completed comparison scenarios"
+      - "Best practices guide for tool selection"
+      - "Personal workflow strategy"
+
+resources:
+  documentation:
+    - name: "Bob Documentation"
+      url: "[Bob Docs URL]"
+    - name: "Bob vs Cursor Comparison Guide"
+      url: "[Comparison Guide URL]"
+  
+  repositories:
+    - name: "Workshop Materials"
+      url: "[Workshop Repo URL]"
+  
+  support:
+    - type: "Slack Channel"
+      details: "[#bob-workshop]"
+    - type: "Email Support"
+      details: "[support@company.com]"
+
+business_value_tracking:
+  enabled: true
+  collection_points:
+    after_each_lab: true
+    end_of_workshop: true
+    post_workshop_followup: false
+  survey_tool: "Google Forms"
+  metrics_to_track:
+    - "Understanding of Bob's differentiators"
+    - "Perceived value vs Cursor"
+    - "Likelihood to adopt Bob"
+    - "Complementary usage interest"
+    - "Workflow improvement potential"
+
+key_differentiators:
+  - name: "Agentic Workflows"
+    description: "Bob executes multi-step tasks autonomously without manual intervention"
+    demo_scenario: "Complex refactoring across multiple files with testing"
+    
+  - name: "Tool Integration"
+    description: "Direct access to terminal, file system, git, and development tools"
+    demo_scenario: "Automated deployment pipeline setup with git operations"
+    
+  - name: "Context Awareness"
+    description: "Understands entire codebase structure and cross-file dependencies"
+    demo_scenario: "Impact analysis and dependency tracking across project"
+    
+  - name: "Mode Specialization"
+    description: "Different modes for different tasks (code, debug, plan, architect)"
+    demo_scenario: "Switching between planning and implementation modes"
+    
+  - name: "MCP Server Integration"
+    description: "Extensible with custom tools and capabilities"
+    demo_scenario: "Custom tool integration for specific workflows"
+
+complementary_usage:
+  use_bob_for:
+    - "Complex multi-file refactoring"
+    - "Automated testing and CI/CD setup"
+    - "System-level operations and deployments"
+    - "Architecture planning and design"
+    - "Debugging across multiple files"
+    
+  use_cursor_for:
+    - "Quick inline code suggestions"
+    - "Rapid prototyping in single files"
+    - "Fast autocomplete and snippets"
+    - "Simple code generation"
+    
+  workflow_recommendation: "Use Cursor for quick edits and suggestions, Bob for complex tasks and autonomous workflows"
+
+notes:
+  - "This is a comparison workshop, not a competitive session"
+  - "Emphasize that both tools have their place in a developer's toolkit"
+  - "Focus on Bob's unique capabilities that complement Cursor"
+  - "Encourage attendees to try both and find their optimal workflow"
+  - "Highlight real-world use cases where Bob excels"
+
+# Made with Bob

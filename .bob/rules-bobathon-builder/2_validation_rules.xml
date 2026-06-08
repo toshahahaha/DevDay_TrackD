@@ -1,0 +1,781 @@
+<validation_rules>
+  <overview>
+    Validation ensures bobathon materials are complete, consistent, and ready to deliver.
+    Always validate before marking work as complete.
+    
+    CRITICAL FOR SELLERS: Lab validation prevents negative client impressions by ensuring
+    all materials work correctly before delivery. Failed labs damage credibility and product perception.
+  </overview>
+  
+  <todo_tracking>
+    <description>
+      Use update_todo_list to track validation progress. This provides visual feedback
+      and ensures all mandatory validation steps are completed.
+    </description>
+    <validation_todo_template>
+[ ] Run lab validation
+[ ] Run schedule validation
+[ ] Run documentation validation
+[ ] Run consistency validation
+[ ] Run quality checks
+[ ] Generate validation report
+    </validation_todo_template>
+    <when_to_create>
+      Create or update the todo list when starting validation workflow
+    </when_to_create>
+    <when_to_update>
+      Update after completing each validation step
+    </when_to_update>
+  </todo_tracking>
+  
+  <validation_importance>
+    <reason>Prevents technical failures during client delivery</reason>
+    <reason>Ensures professional quality and seller credibility</reason>
+    <reason>Catches syntax errors, broken paths, and missing dependencies</reason>
+    <reason>Verifies realistic timing and appropriate difficulty</reason>
+    <reason>Confirms all placeholder text has been replaced</reason>
+    <impact>A single failed lab exercise can undermine the entire bobathon and damage Bob's reputation</impact>
+  </validation_importance>
+  
+  <when_to_validate>
+    <trigger>After generating or customizing any lab materials</trigger>
+    <trigger>After generating code (starter or solutions)</trigger>
+    <trigger>Before marking bobathon as complete</trigger>
+    <trigger>Before sending materials to client (self-serve)</trigger>
+    <trigger>Before delivering facilitated session</trigger>
+    <mandatory>Validation is MANDATORY before any client delivery</mandatory>
+  </when_to_validate>
+
+  <configuration_validation>
+    <required_fields>
+      <section name="opportunity">
+        <field name="opportunity_number" type="string">
+          <validation>Must be exactly 18 alphanumeric characters</validation>
+          <pattern>^[A-Za-z0-9]{18}$</pattern>
+          <example>000Xx00000XXxXXXX0</example>
+          <error_message>Invalid opportunity number format. Must be exactly 18 alphanumeric characters.</error_message>
+          <mandatory>true</mandatory>
+          <description>
+            Salesforce opportunity number for tracking and reconciliation.
+            This must be collected and validated before any bobathon setup begins.
+          </description>
+        </field>
+      </section>
+
+      <section name="client">
+        <field name="name" type="string">
+          <validation>Must not be empty or placeholder like "[Client Name]"</validation>
+          <example>Acme Financial Services</example>
+        </field>
+        <field name="market" type="string">
+          <validation>Must be specific industry/market segment</validation>
+          <example>Financial Services / Banking</example>
+        </field>
+        <field name="contact.primary" type="string">
+          <validation>Must be a real name</validation>
+          <example>Jane Smith</example>
+        </field>
+        <field name="contact.email" type="string">
+          <validation>Must be valid email format</validation>
+          <example>jane.smith@acme.com</example>
+        </field>
+      </section>
+
+      <section name="technologies">
+        <field name="primary_language" type="string">
+          <validation>Must be specific language, not placeholder</validation>
+          <example>Python, Java, JavaScript, TypeScript</example>
+        </field>
+        <field name="frameworks" type="array">
+          <validation>Must have at least 1 framework</validation>
+          <example>["Django", "React"]</example>
+        </field>
+        <field name="infrastructure" type="string">
+          <validation>Must specify cloud provider or on-premise</validation>
+          <example>AWS, Azure, GCP, On-premise</example>
+        </field>
+      </section>
+
+      <section name="use_cases">
+        <validation>Must have at least 3 use cases</validation>
+        <validation>At least 2 must be high priority</validation>
+        <validation>Each must have name, description, priority, estimated_time</validation>
+        <field name="name" type="string">
+          <validation>Brief, descriptive name</validation>
+          <example>API Development, Code Refactoring</example>
+        </field>
+        <field name="description" type="string">
+          <validation>Clear explanation of what to accomplish</validation>
+        </field>
+        <field name="priority" type="enum">
+          <validation>Must be: high, medium, or low</validation>
+        </field>
+        <field name="estimated_time" type="string">
+          <validation>Must include time estimate</validation>
+          <example>30 minutes, 45 minutes</example>
+        </field>
+      </section>
+
+      <section name="schedule">
+        <field name="total_duration_hours" type="number">
+          <validation>Must be positive number</validation>
+          <validation>Common values: 3, 4, 6, 12</validation>
+        </field>
+        <field name="date" type="string">
+          <validation>Must be valid date format YYYY-MM-DD</validation>
+        </field>
+        <field name="timezone" type="string">
+          <validation>Must be valid timezone</validation>
+          <example>America/New_York, UTC-5</example>
+        </field>
+      </section>
+
+      <section name="labs">
+        <validation>Must have 3 labs defined</validation>
+        <validation>Each lab must have id, name, duration, difficulty, objectives</validation>
+      </section>
+    </required_fields>
+
+    <consistency_checks>
+      <check name="timing_adds_up">
+        <description>Verify schedule timing is mathematically correct</description>
+        <rule>morning_session.duration_minutes + lunch_break.duration_minutes + afternoon_session.duration_minutes = total_duration_hours * 60</rule>
+      </check>
+
+      <check name="use_cases_fit_time">
+        <description>Ensure use cases fit within Lab 3 time allocation</description>
+        <rule>Sum of use_case.estimated_time ≤ afternoon_session.segments[client-specific].duration_minutes</rule>
+        <warning>If close to limit, warn about buffer time for questions</warning>
+      </check>
+
+      <check name="tech_stack_consistency">
+        <description>Technology references are consistent throughout</description>
+        <rule>All framework references match technologies.frameworks</rule>
+        <rule>All tool references match technologies.tools</rule>
+      </check>
+
+
+  <lab_technical_validation>
+    <overview>
+      Technical validation ensures labs work correctly and won't fail during delivery.
+      This is CRITICAL for maintaining seller credibility and positive client impressions.
+    </overview>
+    
+    <code_validation>
+      <check name="syntax_correctness">
+        <description>All code is syntactically valid</description>
+        <validation>No syntax errors in any code files</validation>
+        <validation>Imports and dependencies are correct</validation>
+        <validation>Proper indentation and formatting</validation>
+        <validation>File extensions match language</validation>
+        <severity>CRITICAL - Will cause immediate failure</severity>
+      </check>
+      
+      <check name="executability">
+        <description>Code can actually be run</description>
+        <validation>All dependencies are listed and available</validation>
+        <validation>Setup instructions are complete and accurate</validation>
+        <validation>File paths are correct and relative</validation>
+        <validation>Commands in instructions actually work</validation>
+        <severity>CRITICAL - Participants won't be able to complete labs</severity>
+      </check>
+      
+      <check name="starter_code_quality">
+        <description>Starter code is appropriate for participants</description>
+        <validation>Has clear TODO comments</validation>
+        <validation>Includes function/class signatures</validation>
+        <validation>Provides enough structure without giving away solution</validation>
+        <validation>Has helpful comments explaining goals</validation>
+        <severity>HIGH - Affects learning experience</severity>
+      </check>
+      
+      <check name="solution_completeness">
+        <description>Solutions are complete and demonstrate best practices</description>
+        <validation>Code executes without errors</validation>
+        <validation>Implements all required functionality</validation>
+        <validation>Follows language/framework best practices</validation>
+        <validation>Includes proper error handling</validation>
+        <validation>Has clear comments explaining approach</validation>
+        <severity>HIGH - Facilitators need working solutions</severity>
+      </check>
+    </code_validation>
+    
+    <file_reference_validation>
+      <overview>
+        Ensure all files referenced in lab instructions either exist or have clear creation instructions.
+        This prevents participants from being blocked by missing files during the bobathon.
+      </overview>
+      
+      <check name="referenced_files_exist">
+        <description>All file paths mentioned in instructions are valid</description>
+        <validation>Check that referenced files exist in the project structure</validation>
+        <validation>Verify file paths are correct and accessible</validation>
+        <validation>Ensure no broken references to non-existent files</validation>
+        <severity>CRITICAL - Missing files block lab progress</severity>
+        <common_references>
+          <file>resources/bob-installation.md - Installation instructions</file>
+          <file>resources/cheat-sheet.md - Quick reference guide</file>
+          <file>resources/troubleshooting.md - Common issues and solutions</file>
+          <file>bobathon-config.yaml - Configuration file</file>
+          <file>schedule/detailed-agenda.md - Session schedule</file>
+        </common_references>
+      </check>
+      
+      <check name="creation_instructions_provided">
+        <description>Files that don't exist have clear creation instructions</description>
+        <validation>If a file is referenced but doesn't exist, instructions must explain how to create it</validation>
+        <validation>Creation instructions must be complete and actionable</validation>
+        <validation>Instructions must specify exact file path and content structure</validation>
+        <severity>CRITICAL - Participants need to know how to create required files</severity>
+        <example_good>
+          "Create a new file `src/config.json` with the following structure:
+          ```json
+          {
+            "apiUrl": "https://api.example.com",
+            "timeout": 5000
+          }
+          ```"
+        </example_good>
+        <example_bad>
+          "Update the config file" (no path or creation instructions)
+        </example_bad>
+      </check>
+      
+      <check name="starter_code_availability">
+        <description>Starter code files are provided or have generation instructions</description>
+        <validation>If lab references starter code, it must be included in the project</validation>
+        <validation>Alternatively, provide clear instructions to generate starter code</validation>
+        <validation>Starter code must be in correct location with proper structure</validation>
+        <severity>HIGH - Missing starter code frustrates participants</severity>
+      </check>
+      
+      <check name="resource_file_completeness">
+        <description>All resource files referenced are complete and accurate</description>
+        <validation>resources/bob-installation.md contains all platform instructions</validation>
+        <validation>resources/cheat-sheet.md has relevant commands for client's tech stack</validation>
+        <validation>resources/troubleshooting.md addresses common issues</validation>
+        <validation>No placeholder content in resource files</validation>
+        <severity>HIGH - Incomplete resources reduce bobathon effectiveness</severity>
+      </check>
+      
+      <check name="external_dependencies">
+        <description>External files or resources are accessible</description>
+        <validation>URLs to external resources are valid and accessible</validation>
+        <validation>API endpoints referenced are available or have mock alternatives</validation>
+        <validation>Sample data files are included or downloadable</validation>
+        <validation>Third-party tools are publicly available</validation>
+        <severity>CRITICAL - Inaccessible dependencies block progress</severity>
+      </check>
+      
+      <validation_process>
+        <step>Extract all file references from lab instructions</step>
+        <step>Check if each referenced file exists in the project</step>
+        <step>For existing files, verify they are complete and not placeholders</step>
+        <step>For non-existent files, verify creation instructions are provided</step>
+        <step>Validate all URLs and external resources are accessible</step>
+        <step>Report any missing files or incomplete instructions</step>
+      </validation_process>
+      
+      <file_reference_patterns>
+        <pattern>Markdown links: [text](path/to/file.ext)</pattern>
+        <pattern>Code blocks with file paths: `path/to/file.ext`</pattern>
+        <pattern>Inline file mentions: "in the config.json file"</pattern>
+        <pattern>Command references: "run npm install in package.json"</pattern>
+        <pattern>Import statements in code examples</pattern>
+      </file_reference_patterns>
+      
+      <remediation>
+        <if_file_missing>
+          <option>Create the file with appropriate content</option>
+          <option>Add clear creation instructions to the lab</option>
+          <option>Remove the reference if not essential</option>
+        </if_file_missing>
+        <if_instructions_unclear>
+          <action>Add step-by-step file creation instructions</action>
+          <action>Include exact file path and content structure</action>
+          <action>Provide code examples or templates</action>
+        </if_instructions_unclear>
+      </remediation>
+    </file_reference_validation>
+    
+    <instruction_validation>
+      <check name="completeness">
+        <description>All required sections are present</description>
+        <required>Objectives - Clear learning goals</required>
+        <required>Prerequisites - Required setup and knowledge</required>
+        <required>Instructions - Step-by-step guidance</required>
+        <required>Exercises - Hands-on tasks</required>
+        <required>Success Criteria - Verification steps</required>
+        <required>Business Impact - Value metrics</required>
+        <severity>CRITICAL - Incomplete labs confuse participants</severity>
+      </check>
+      
+      <check name="clarity">
+        <description>Instructions are clear and unambiguous</description>
+        <validation>No placeholder text like [TODO] or [FILL IN]</validation>
+        <validation>All file paths are specific and correct</validation>
+        <validation>All commands are complete and executable</validation>
+        <validation>Technical terms are explained</validation>
+        <severity>HIGH - Unclear instructions waste time</severity>
+      </check>
+      
+      <check name="tech_stack_alignment">
+        <description>All examples match client's technology</description>
+        <validation>Code uses client's programming language</validation>
+        <validation>Framework references match client's stack</validation>
+        <validation>Tool commands match client's tools</validation>
+        <validation>No generic placeholders remain</validation>
+        <severity>HIGH - Mismatched tech confuses and frustrates</severity>
+      </check>
+    </instruction_validation>
+    
+    <timing_validation>
+      <check name="realistic_duration">
+        <description>Lab duration is achievable</description>
+        <guideline>Lab 1: 20-30 minutes for beginners</guideline>
+        <guideline>Lab 2: 25-40 minutes for intermediate</guideline>
+        <guideline>Lab 3: 40-90 minutes for advanced</guideline>
+        <warning>Too complex for time = participant failure and frustration</warning>
+        <severity>HIGH - Unrealistic timing damages experience</severity>
+      </check>
+      
+      <check name="buffer_time">
+        <description>Includes time for questions and issues</description>
+        <recommendation>Add 20-30% buffer for questions, troubleshooting, discussion</recommendation>
+        <severity>MEDIUM - Tight timing creates stress</severity>
+      </check>
+    </timing_validation>
+    
+    <dependency_validation>
+      <check name="prerequisites_clear">
+        <description>All prerequisites are documented</description>
+        <validation>Required software versions specified</validation>
+        <validation>Installation instructions provided</validation>
+        <validation>Environment setup documented</validation>
+        <validation>Access requirements clear</validation>
+        <severity>CRITICAL - Missing prerequisites block progress</severity>
+      </check>
+      
+      <check name="dependencies_available">
+        <description>All dependencies are accessible</description>
+        <validation>Libraries/packages are publicly available</validation>
+        <validation>API endpoints are accessible or mocked</validation>
+        <validation>Sample data files included</validation>
+        <validation>No proprietary resources required</validation>
+        <severity>CRITICAL - Unavailable dependencies stop labs</severity>
+      </check>
+    </dependency_validation>
+    
+    <progression_validation>
+      <check name="difficulty_progression">
+        <description>Labs progress logically</description>
+        <validation>Lab 1 builds foundational skills</validation>
+        <validation>Lab 2 builds on Lab 1</validation>
+        <validation>Lab 3 applies skills to real scenarios</validation>
+        <validation>No sudden complexity jumps</validation>
+        <severity>MEDIUM - Poor progression frustrates learners</severity>
+      </check>
+    </progression_validation>
+    
+    <quality_validation>
+      <check name="professional_quality">
+        <description>Materials are polished and professional</description>
+        <validation>No spelling or grammar errors</validation>
+        <validation>Consistent formatting throughout</validation>
+        <validation>No broken links</validation>
+        <validation>Consistent terminology</validation>
+        <severity>MEDIUM - Quality issues damage credibility</severity>
+      </check>
+    </quality_validation>
+  </lab_technical_validation>
+  
+  <validation_workflow_reference>
+    <description>
+      For detailed validation workflow, see the validate_lab_materials workflow
+      in 1_workflow.xml. This workflow provides step-by-step validation process
+      including automated checks and manual review points.
+    </description>
+    <mandatory_before>
+      <action>Sending materials to client (self-serve)</action>
+      <action>Delivering facilitated session</action>
+      <action>Marking bobathon as complete</action>
+    </mandatory_before>
+  </validation_workflow_reference>
+      <check name="lab_timing_realistic">
+        <description>Lab durations are achievable</description>
+        <rule>Lab 1: 20-40 minutes (typically 30)</rule>
+        <rule>Lab 2: 20-40 minutes (typically 30)</rule>
+        <rule>Lab 3: 60-120 minutes (typically 90)</rule>
+      </check>
+    </consistency_checks>
+
+    <placeholder_detection>
+      <description>Ensure no template placeholders remain</description>
+      <patterns_to_flag>
+        <pattern>[Client Name]</pattern>
+        <pattern>[Industry/Market]</pattern>
+        <pattern>[e.g., ...]</pattern>
+        <pattern>[URL]</pattern>
+        <pattern>[Link]</pattern>
+        <pattern>[Your ...]</pattern>
+        <pattern>[Customize ...]</pattern>
+      </patterns_to_flag>
+      <action>If found, ask user to provide specific values</action>
+    </placeholder_detection>
+  </configuration_validation>
+
+  <lab_validation>
+    <lab name="lab1">
+      <required_elements>
+        <element priority="critical">Prerequisites section with Bob installation instructions</element>
+        <element priority="critical">Installation steps for macOS, Linux, and Windows</element>
+        <element priority="critical">Authentication instructions</element>
+        <element>Objectives specific to client's tech stack</element>
+        <element>Exercises using client's programming language</element>
+        <element>Examples with client's frameworks</element>
+        <element>References to client's tools</element>
+      </required_elements>
+      
+      <checks>
+        <check priority="critical">Prerequisites section exists and includes Bob installation</check>
+        <check priority="critical">Installation instructions reference resources/bob-installation.md content</check>
+        <check priority="critical">All three platforms (macOS, Linux, Windows) are covered</check>
+        <check>No generic "Python" examples if client uses Java</check>
+        <check>File paths match client's project structure</check>
+        <check>Commands use client's build tools (Maven, npm, etc.)</check>
+        <check>Terminology matches client's domain</check>
+      </checks>
+    </lab>
+
+    <lab name="lab2">
+      <required_elements>
+        <element>Refactoring examples in client's language</element>
+        <element>Framework-specific patterns</element>
+        <element>Testing with client's test framework</element>
+        <element>Advanced features relevant to client</element>
+      </required_elements>
+      
+      <checks>
+        <check>Examples are more complex than Lab 1</check>
+        <check>Builds on Lab 1 concepts</check>
+        <check>Uses client's actual patterns and conventions</check>
+      </checks>
+    </lab>
+
+    <lab name="lab3">
+      <required_elements>
+        <element>Scenarios based on client's use cases</element>
+        <element>Real business problems from client's domain</element>
+        <element>Step-by-step Bob workflows</element>
+        <element>Success criteria for each scenario</element>
+        <element>Timing for each use case</element>
+      </required_elements>
+      
+      <checks>
+        <check>All high-priority use cases are addressed</check>
+        <check>Scenarios use client's actual codebase structure</check>
+        <check>Examples reference client's APIs/services</check>
+        <check>Total time fits within Lab 3 allocation</check>
+        <check>No generic template scenarios remain</check>
+      </checks>
+    </lab>
+
+    <general_lab_checks>
+      <check>All code examples are syntactically correct</check>
+      <check>File paths are realistic for client's project</check>
+      <check>Commands will work in client's environment</check>
+      <check>Prerequisites are achievable</check>
+      <check>Deliverables are measurable</check>
+    </general_lab_checks>
+  </lab_validation>
+
+  <schedule_validation>
+    <timing_checks>
+      <check name="total_time">
+        <description>Schedule matches configured duration</description>
+        <calculation>Sum all segment durations = total_duration_hours * 60</calculation>
+      </check>
+
+      <check name="segment_proportions">
+        <description>Time allocation is reasonable</description>
+        <guidelines>
+          <guideline>Introduction: 5-10% of total time</guideline>
+          <guideline>Basic features: 20-30% of total time</guideline>
+          <guideline>Advanced features: 15-20% of total time</guideline>
+          <guideline>Client-specific: 40-50% of total time</guideline>
+          <guideline>Wrap-up: 5-10% of total time</guideline>
+        </guidelines>
+      </check>
+
+      <check name="breaks_included">
+        <description>Adequate breaks for participant comfort</description>
+        <rule>For 6+ hours: Include lunch break (45-60 min)</rule>
+        <rule>For 3+ hours: Include at least one 10-15 min break</rule>
+      </check>
+
+      <check name="buffer_time">
+        <description>Time for questions and overruns</description>
+        <recommendation>Include 10-15% buffer in client-specific section</recommendation>
+      </check>
+    </timing_checks>
+
+    <content_checks>
+      <check>All use cases from config are addressed in schedule</check>
+      <check>Lab timing in schedule matches lab definitions</check>
+      <check>Topics align with client's priorities</check>
+      <check>Deliverables are specific and measurable</check>
+    </content_checks>
+  </schedule_validation>
+
+  <consistency_validation>
+    <cross_file_checks>
+      <check name="tech_stack_consistency">
+        <description>Technology references match across all files</description>
+        <files>
+          <file>bobathon-config.yaml</file>
+          <file>labs/lab1-basic-operations/instructions.md</file>
+          <file>labs/lab2-advanced-workflows/instructions.md</file>
+          <file>labs/lab3-client-specific/instructions.md</file>
+        </files>
+        <validation>All code examples use same language/frameworks</validation>
+      </check>
+
+      <check name="use_case_coverage">
+        <description>All use cases are addressed in materials</description>
+        <validation>Each use case in config appears in Lab 3</validation>
+      </check>
+
+      <check name="timing_consistency">
+        <description>Time estimates match across files</description>
+        <validation>Lab durations in config match schedule</validation>
+        <validation>Use case times in config match Lab 3 scenarios</validation>
+      </check>
+
+      <check name="terminology_consistency">
+        <description>Terms and names are used consistently</description>
+        <validation>Client name is consistent</validation>
+        <validation>Product/service names are consistent</validation>
+        <validation>Technical terms are used consistently</validation>
+      </check>
+    </cross_file_checks>
+  </consistency_validation>
+
+  <quality_checks>
+    <check name="completeness">
+      <description>All sections are filled out, no TODOs remain</description>
+      <patterns_to_flag>
+        <pattern>TODO</pattern>
+        <pattern>FIXME</pattern>
+        <pattern>TBD</pattern>
+        <pattern>...</pattern>
+      </patterns_to_flag>
+    </check>
+
+    <check name="specificity">
+      <description>Examples are specific, not generic</description>
+      <bad_examples>
+        <example>Update the config file</example>
+        <example>Fix the bug</example>
+        <example>Add a function</example>
+      </bad_examples>
+      <good_examples>
+        <example>Update the timeout value in config/settings.json to 30 seconds</example>
+        <example>Fix the null pointer exception in getUserData() on line 45</example>
+        <example>Add a validateEmail() function to src/utils/validation.py</example>
+      </good_examples>
+    </check>
+
+    <check name="actionability">
+      <description>Instructions are clear and actionable</description>
+      <validation>Each exercise has specific steps</validation>
+      <validation>Success criteria are measurable</validation>
+      <validation>Examples can be executed</validation>
+    </check>
+
+    <check name="relevance">
+      <description>Content is relevant to client's needs</description>
+      <validation>Examples use client's domain terminology</validation>
+      <validation>Scenarios address real business problems</validation>
+      <validation>Tools and frameworks match client's stack</validation>
+    </check>
+  </quality_checks>
+
+  <validation_workflow>
+    <step number="1">
+      <action>Read all bobathon files</action>
+      <files>
+        <file>bobathon-config.yaml</file>
+        <file>labs/lab1-basic-operations/instructions.md</file>
+        <file>labs/lab2-advanced-workflows/instructions.md</file>
+        <file>labs/lab3-client-specific/instructions.md</file>
+        <file>schedule/detailed-agenda.md</file>
+      </files>
+    </step>
+
+    <step number="2">
+      <action>Run configuration validation</action>
+      <checks>
+        <check>Required fields</check>
+        <check>Consistency checks</check>
+        <check>Placeholder detection</check>
+      </checks>
+    </step>
+
+    <step number="3" priority="mandatory">
+      <action>Run lab validation</action>
+      <required>true</required>
+      <checks>
+        <check>Lab 1 customization</check>
+        <check>Lab 2 customization</check>
+        <check>Lab 3 client-specific scenarios</check>
+        <check>File reference validation (all referenced files exist or have creation instructions)</check>
+        <check>General lab quality</check>
+      </checks>
+      <details>
+        Lab validation is MANDATORY before any client delivery.
+        This prevents technical failures and ensures professional quality.
+      </details>
+    </step>
+
+    <step number="4" priority="mandatory">
+      <action>Run schedule validation</action>
+      <required>true</required>
+      <todo_update>Mark "Run schedule validation" as completed after all schedule checks pass</todo_update>
+      <checks>
+        <check>Timing calculations</check>
+        <check>Content coverage</check>
+        <check>Break allocation</check>
+      </checks>
+      <details>
+        Schedule validation ensures realistic timing and proper content flow.
+        This is critical for successful delivery within time constraints.
+      </details>
+    </step>
+    
+    <step number="5" priority="mandatory">
+      <action>Run documentation validation</action>
+      <required>true</required>
+      <todo_update>Mark "Run documentation validation" as completed after all documentation checks pass</todo_update>
+      <checks>
+        <check>README completeness and accuracy</check>
+        <check>Email templates populated with correct information</check>
+        <check>Survey questions relevant to client context</check>
+        <check>All seller contact information present</check>
+        <check>Installation instructions clear and complete</check>
+        <check>No placeholder text remaining</check>
+      </checks>
+      <details>
+        Documentation validation ensures all client-facing materials are professional,
+        complete, and ready for delivery without additional editing.
+      </details>
+    </step>
+
+    <step number="6">
+      <action>Run consistency validation</action>
+      <todo_update>Mark "Run consistency validation" as completed after all consistency checks pass</todo_update>
+      <checks>
+        <check>Cross-file consistency</check>
+        <check>Terminology consistency</check>
+        <check>Tech stack consistency</check>
+      </checks>
+    </step>
+
+    <step number="7">
+      <action>Run quality checks</action>
+      <todo_update>Mark "Run quality checks" as completed after all quality checks pass</todo_update>
+      <checks>
+        <check>Completeness</check>
+        <check>Specificity</check>
+        <check>Actionability</check>
+        <check>Relevance</check>
+      </checks>
+    </step>
+
+    <step number="8">
+      <action>Generate validation report</action>
+      <todo_update>Mark "Generate validation report" as completed after report is generated</todo_update>
+      <report_structure>
+        <section name="summary">
+          <item>Overall status (Ready / Needs Work)</item>
+          <item>Number of issues found</item>
+          <item>Critical issues that must be fixed</item>
+        </section>
+        <section name="findings">
+          <category>Configuration Issues</category>
+          <category>Lab Issues</category>
+          <category>File Reference Issues</category>
+          <category>Schedule Issues</category>
+          <category>Consistency Issues</category>
+          <category>Quality Issues</category>
+        </section>
+        <section name="recommendations">
+          <item>Specific fixes needed</item>
+          <item>Priority order</item>
+          <item>Estimated time to fix</item>
+        </section>
+      </report_structure>
+    </step>
+
+    <step number="8">
+      <action>Offer to fix issues</action>
+      <ask_followup_question>
+        <question>I found [X] issues that need attention. Would you like me to fix them?</question>
+        <follow_up>
+          <suggest>Yes, fix all issues automatically</suggest>
+          <suggest>Show me the issues first, then I'll decide</suggest>
+          <suggest>Fix only the critical issues</suggest>
+          <suggest>I'll fix them manually</suggest>
+        </follow_up>
+      </ask_followup_question>
+    </step>
+  </validation_workflow>
+
+  <error_messages>
+    <error type="missing_required_field">
+      <message>Required field '{field_name}' is missing or empty in {file_name}</message>
+      <action>Ask user to provide the value</action>
+    </error>
+
+    <error type="placeholder_found">
+      <message>Template placeholder '{placeholder}' found in {file_name}</message>
+      <action>Ask user to provide specific value</action>
+    </error>
+
+    <error type="timing_mismatch">
+      <message>Timing doesn't add up: {calculation} ≠ {expected}</message>
+      <action>Recalculate and fix timing</action>
+    </error>
+
+    <error type="tech_stack_mismatch">
+      <message>Lab uses {found_tech} but config specifies {expected_tech}</message>
+      <action>Update lab to use correct tech stack</action>
+    </error>
+
+    <error type="use_case_not_addressed">
+      <message>Use case '{use_case_name}' from config not found in Lab 3</message>
+      <action>Add scenario for this use case</action>
+    </error>
+    
+    <error type="file_reference_missing">
+      <message>File '{file_path}' referenced in {lab_name} does not exist</message>
+      <action>Either create the file or add clear instructions on how to create it</action>
+    </error>
+    
+    <error type="file_creation_instructions_missing">
+      <message>File '{file_path}' referenced in {lab_name} doesn't exist and no creation instructions provided</message>
+      <action>Add step-by-step instructions for creating this file, including exact path and content structure</action>
+    </error>
+    
+    <error type="resource_file_incomplete">
+      <message>Resource file '{file_path}' contains placeholder content or is incomplete</message>
+      <action>Complete the resource file with actual content relevant to the client's tech stack</action>
+    </error>
+    
+    <error type="external_dependency_unavailable">
+      <message>External resource '{url}' referenced in {lab_name} is not accessible</message>
+      <action>Verify URL is correct, provide alternative, or include resource locally</action>
+    </error>
+  </error_messages>
+</validation_rules>
+
+<!-- Made with Bob -->

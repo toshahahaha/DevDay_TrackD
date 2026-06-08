@@ -1,0 +1,298 @@
+<tool_usage_instructions>
+  <overview>
+    Specific instructions for using tools in the Bobathon Builder workflow,
+    including platform-specific commands and API interactions.
+  </overview>
+
+  <opportunity_submission>
+    <description>
+      Submit opportunity numbers to the tracking system by creating GitHub issues.
+      This must be done as the first step of any bobathon setup workflow.
+    </description>
+
+    <validation_logic>
+      <code language="javascript">
+        // Validate opportunity number format
+        function validateOpportunityNumber(oppNumber) {
+          // Must be exactly 18 characters
+          if (oppNumber.length !== 18) {
+            return { valid: false, error: "Must be exactly 18 characters" };
+          }
+          
+          // Must be alphanumeric only
+          if (!/^[A-Za-z0-9]+$/.test(oppNumber)) {
+            return { valid: false, error: "Must contain only letters and numbers" };
+          }
+          
+          return { valid: true };
+        }
+      </code>
+    </validation_logic>
+
+    <os_detection>
+      <description>
+        Detect the operating system to use the appropriate command syntax.
+        Check environment variables that are platform-specific.
+      </description>
+      <windows_indicators>
+        - OS environment variable contains "Windows"
+        - USERPROFILE environment variable exists
+        - PowerShell is available
+      </windows_indicators>
+      <unix_indicators>
+        - OS environment variable contains "Linux" or "Darwin"
+        - HOME environment variable exists
+        - bash/zsh shell available
+      </unix_indicators>
+    </os_detection>
+
+    <command_templates>
+      <windows_powershell>
+        <description>Use PowerShell's Invoke-RestMethod for Windows systems</description>
+        <command><![CDATA[
+# PowerShell command for Windows
+$opportunityNumber = "OPPORTUNITY_NUMBER_PLACEHOLDER"
+$user = if ($env:USERNAME) { $env:USERNAME } else { "unknown" }
+$timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$token = $env:GHE_TOKEN
+$repo = if ($env:GITHUB_REPOSITORY) { $env:GITHUB_REPOSITORY } else { "N/A" }
+
+if (-not $token) {
+    Write-Error "GHE_TOKEN environment variable not set. Please set it with your IBM GitHub Enterprise Personal Access Token."
+    exit 1
+}
+
+# Determine labels based on opportunity number
+$labels = @("opportunity-tracking")
+if ($opportunityNumber -eq "000000000000000000") {
+    $labels += "education-testing"
+}
+
+$body = @{
+    title = "Opportunity: $opportunityNumber"
+    body = "**Submitted by:** $user`n**Opportunity Number:** $opportunityNumber`n**Repository:** $repo`n**Timestamp:** $timestamp"
+    labels = $labels
+} | ConvertTo-Json -Compress
+
+try {
+    $response = Invoke-RestMethod -Uri "https://github.ibm.com/api/v3/repos/WW-CE/seller-bobathon-builder/issues" `
+        -Method Post `
+        -Headers @{
+            "Authorization" = "token $token"
+            "Accept" = "application/vnd.github.v3+json"
+            "User-Agent" = "Bobathon-Builder"
+        } `
+        -Body $body `
+        -ContentType "application/json"
+    
+    Write-Host "✓ Opportunity $opportunityNumber submitted successfully"
+    Write-Host "Issue URL: $($response.html_url)"
+} catch {
+    Write-Error "Failed to submit opportunity: $_"
+    exit 1
+}
+        ]]></command>
+        <notes>
+          - Uses Invoke-RestMethod (native PowerShell)
+          - Handles missing environment variables gracefully
+          - Provides clear error messages
+          - Returns issue URL on success
+          - Automatically adds "education-testing" label for opportunity 000000000000000000
+        </notes>
+      </windows_powershell>
+
+      <unix_curl>
+        <description>Use curl for macOS and Linux systems</description>
+        <command><![CDATA[
+#!/bin/bash
+# Bash/curl command for macOS/Linux
+
+OPPORTUNITY_NUMBER="OPPORTUNITY_NUMBER_PLACEHOLDER"
+USER="${USER:-${USERNAME:-unknown}}"
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+TOKEN="${GHE_TOKEN}"
+REPO="${GITHUB_REPOSITORY:-N/A}"
+
+if [ -z "$TOKEN" ]; then
+    echo "Error: GHE_TOKEN environment variable not set."
+    echo "Please set it with your IBM GitHub Enterprise Personal Access Token."
+    exit 1
+fi
+
+# Determine labels based on opportunity number
+if [ "$OPPORTUNITY_NUMBER" = "000000000000000000" ]; then
+    LABELS='["opportunity-tracking", "education-testing"]'
+else
+    LABELS='["opportunity-tracking"]'
+fi
+
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+  -H "Authorization: token ${TOKEN}" \
+  -H "Accept: application/vnd.github.v3+json" \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: Bobathon-Builder" \
+  https://github.ibm.com/api/v3/repos/WW-CE/seller-bobathon-builder/issues \
+  -d "{
+    \"title\": \"Opportunity: ${OPPORTUNITY_NUMBER}\",
+    \"body\": \"**Submitted by:** ${USER}\\n**Opportunity Number:** ${OPPORTUNITY_NUMBER}\\n**Repository:** ${REPO}\\n**Timestamp:** ${TIMESTAMP}\",
+    \"labels\": ${LABELS}
+  }")
+
+HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+BODY=$(echo "$RESPONSE" | sed '$d')
+
+if [ "$HTTP_CODE" -eq 201 ]; then
+    echo "✓ Opportunity ${OPPORTUNITY_NUMBER} submitted successfully"
+    ISSUE_URL=$(echo "$BODY" | grep -o '"html_url":"[^"]*"' | cut -d'"' -f4)
+    echo "Issue URL: ${ISSUE_URL}"
+else
+    echo "Error: Failed to submit opportunity (HTTP ${HTTP_CODE})"
+    echo "$BODY"
+    exit 1
+fi
+        ]]></command>
+        <notes>
+          - Uses curl (available on all Unix systems)
+          - Captures HTTP status code for error handling
+          - Extracts issue URL from response
+          - Provides clear success/error messages
+          - Automatically adds "education-testing" label for opportunity 000000000000000000
+        </notes>
+      </unix_curl>
+    </command_templates>
+
+    <workflow_integration>
+      <step_by_step>
+        <step number="1">
+          <action>Ask user for opportunity number using ask_followup_question</action>
+          <example>
+            <ask_followup_question>
+              <question>What is the Salesforce opportunity number for this bobathon? (Must be 18 characters, e.g., 000Xx00000XXxXXXX0)</question>
+              <follow_up>
+                <suggest>Enter your 18-character opportunity ID</suggest>
+                <suggest>I don't have one (education/testing)</suggest>
+              </follow_up>
+            </ask_followup_question>
+            <note>
+              If user selects "I don't have one", instruct them to use: 000000000000000000 (18 zeros)
+              for education or testing purposes.
+            </note>
+          </example>
+        </step>
+
+        <step number="2">
+          <action>Validate the opportunity number format</action>
+          <validation>
+            - Check length is exactly 18 characters
+            - Verify only alphanumeric characters
+            - If invalid, ask again with clear error message
+          </validation>
+        </step>
+
+        <step number="3">
+          <action>Detect operating system</action>
+          <detection_method>
+            Check SYSTEM INFORMATION in environment_details for "Operating System" field.
+            - If contains "Windows": Use PowerShell command
+            - If contains "Linux" or "macOS" or "Darwin": Use curl command
+          </detection_method>
+        </step>
+
+        <step number="4">
+          <action>Execute appropriate command using execute_command tool</action>
+          <command_preparation>
+            - Replace OPPORTUNITY_NUMBER_PLACEHOLDER with actual validated number
+            - Ensure GHE_TOKEN environment variable is available
+            - Use the complete command template for the detected OS
+          </command_preparation>
+        </step>
+
+        <step number="5">
+          <action>Verify submission success</action>
+          <success_indicators>
+            - Command exits with status 0
+            - Output contains "submitted successfully"
+            - Issue URL is returned
+          </success_indicators>
+          <error_handling>
+            If submission fails:
+            - Check if GHE_TOKEN is set
+            - Verify network connectivity
+            - Confirm token has correct permissions (repo scope)
+            - Provide clear error message to user
+          </error_handling>
+        </step>
+
+        <step number="6">
+          <action>Confirm to user and proceed with bobathon setup</action>
+          <confirmation_message>
+            "✓ Opportunity [NUMBER] has been submitted to the tracking system. Proceeding with bobathon setup..."
+          </confirmation_message>
+        </step>
+      </step_by_step>
+    </workflow_integration>
+
+    <error_scenarios>
+      <scenario name="invalid_format">
+        <description>Opportunity number doesn't match required format</description>
+        <response>
+          Ask user to provide the opportunity number again with clear format requirements.
+          Show example: "000Xx00000XXxXXXX0"
+        </response>
+      </scenario>
+
+      <scenario name="missing_token">
+        <description>GHE_TOKEN environment variable not set</description>
+        <response>
+          Inform user they need to set GHE_TOKEN with their IBM GitHub Enterprise Personal Access Token.
+          Provide instructions:
+          1. Go to https://github.ibm.com/settings/tokens
+          2. Generate new token with 'repo' scope
+          3. Set as environment variable: export GHE_TOKEN=your_token_here (Unix) or $env:GHE_TOKEN="your_token_here" (Windows)
+        </response>
+      </scenario>
+
+      <scenario name="network_error">
+        <description>Cannot reach GitHub API</description>
+        <response>
+          Check network connectivity and verify access to github.ibm.com.
+          May need to be on VPN or corporate network.
+        </response>
+      </scenario>
+
+      <scenario name="permission_error">
+        <description>Token doesn't have required permissions</description>
+        <response>
+          Token needs 'repo' scope to create issues.
+          User should regenerate token with correct permissions.
+        </response>
+      </scenario>
+    </error_scenarios>
+
+    <testing_notes>
+      <note>Test with valid 18-character opportunity number</note>
+      <note>Test with invalid formats (wrong length, special characters)</note>
+      <note>Test on both Windows and Unix systems</note>
+      <note>Verify issue appears in https://github.ibm.com/WW-CE/seller-bobathon-builder/issues</note>
+      <note>Confirm issue has correct label "opportunity-tracking"</note>
+    </testing_notes>
+  </opportunity_submission>
+
+  <general_tool_guidelines>
+    <guideline>
+      Always validate user input before executing commands
+    </guideline>
+    <guideline>
+      Provide clear error messages with actionable solutions
+    </guideline>
+    <guideline>
+      Use platform-appropriate commands (PowerShell vs bash/curl)
+    </guideline>
+    <guideline>
+      Handle missing environment variables gracefully
+    </guideline>
+    <guideline>
+      Confirm successful operations before proceeding
+    </guideline>
+  </general_tool_guidelines>
+</tool_usage_instructions>

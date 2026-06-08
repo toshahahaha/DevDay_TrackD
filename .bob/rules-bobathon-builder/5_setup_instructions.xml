@@ -1,0 +1,254 @@
+<setup_instructions>
+  <overview>
+    Setup requirements and instructions for using the Bobathon Builder mode,
+    particularly for the opportunity tracking feature.
+  </overview>
+
+  <prerequisites>
+    <requirement name="github_enterprise_access">
+      <description>Access to IBM GitHub Enterprise (github.ibm.com)</description>
+      <verification>Can access https://github.ibm.com in browser</verification>
+      <required>true</required>
+    </requirement>
+
+    <requirement name="personal_access_token">
+      <description>IBM GitHub Enterprise Personal Access Token (PAT)</description>
+      <setup_steps>
+        <step number="1">Navigate to https://github.ibm.com/settings/tokens</step>
+        <step number="2">Click "Generate new token" (classic)</step>
+        <step number="3">Give it a descriptive name (e.g., "Bobathon Builder Tracking")</step>
+        <step number="4">Select the "repo" scope (required for creating issues)</step>
+        <step number="5">Set expiration as needed (recommend 90 days or no expiration)</step>
+        <step number="6">Click "Generate token"</step>
+        <step number="7">Copy the token immediately (it won't be shown again)</step>
+      </setup_steps>
+      <required>true</required>
+    </requirement>
+
+    <requirement name="environment_variable">
+      <description>GHE_TOKEN environment variable set with your PAT</description>
+      <setup_by_platform>
+        <windows>
+          <temporary>
+            <command>$env:GHE_TOKEN="your_token_here"</command>
+            <note>Valid only for current PowerShell session</note>
+          </temporary>
+          <permanent>
+            <command>setx GHE_TOKEN "your_token_here"</command>
+            <note>Requires restarting terminal/VSCode to take effect</note>
+            <alternative>Set via System Properties → Environment Variables</alternative>
+          </permanent>
+        </windows>
+        <macos_linux>
+          <temporary>
+            <command>export GHE_TOKEN="your_token_here"</command>
+            <note>Valid only for current shell session</note>
+          </temporary>
+          <permanent>
+            <bash>
+              <command>echo 'export GHE_TOKEN="your_token_here"' >> ~/.bashrc</command>
+              <reload>source ~/.bashrc</reload>
+            </bash>
+            <zsh>
+              <command>echo 'export GHE_TOKEN="your_token_here"' >> ~/.zshrc</command>
+              <reload>source ~/.zshrc</reload>
+            </zsh>
+          </permanent>
+        </macos_linux>
+      </setup_by_platform>
+      <verification>
+        <windows>echo $env:GHE_TOKEN</windows>
+        <unix>echo $GHE_TOKEN</unix>
+      </verification>
+      <required>true</required>
+    </requirement>
+
+    <requirement name="network_access">
+      <description>Network access to github.ibm.com API</description>
+      <note>May require VPN or corporate network connection</note>
+      <verification>
+        Test with: curl https://github.ibm.com/api/v3/user -H "Authorization: token YOUR_TOKEN"
+      </verification>
+      <required>true</required>
+    </requirement>
+  </prerequisites>
+
+  <opportunity_tracking_setup>
+    <description>
+      The Bobathon Builder automatically tracks all bobathons by submitting opportunity
+      numbers to a central GitHub repository. This enables reconciliation and reporting.
+    </description>
+
+    <how_it_works>
+      <step number="1">
+        User provides Salesforce opportunity number (18 characters)
+      </step>
+      <step number="2">
+        Mode validates format (exactly 18 alphanumeric characters)
+      </step>
+      <step number="3">
+        Mode detects operating system (Windows vs macOS/Linux)
+      </step>
+      <step number="4">
+        Mode executes platform-specific command to create GitHub issue
+      </step>
+      <step number="5">
+        Issue is created in https://github.ibm.com/WW-CE/seller-bobathon-builder/issues
+      </step>
+      <step number="6">
+        Issue is tagged with appropriate labels:
+        - "opportunity-tracking" (always applied)
+        - "education-testing" (automatically added if opportunity is 000000000000000000)
+      </step>
+      <step number="7">
+        Mode confirms successful submission and proceeds with bobathon setup
+      </step>
+    </how_it_works>
+
+    <issue_format>
+      <title>Opportunity: [18-character-number]</title>
+      <body>
+        **Submitted by:** [username]
+        **Opportunity Number:** [18-character-number]
+        **Repository:** [user's-repo-name]
+        **Timestamp:** [ISO-8601-timestamp]
+      </body>
+      <labels>
+        - opportunity-tracking (always)
+        - education-testing (only if opportunity number is 000000000000000000)
+      </labels>
+    </issue_format>
+
+    <reconciliation>
+      <description>
+        All submitted opportunities can be viewed and reconciled using GitHub issue filters
+      </description>
+      <filter_options>
+        <filter name="all_opportunities">
+          <url>https://github.ibm.com/WW-CE/seller-bobathon-builder/issues?q=label:opportunity-tracking</url>
+          <description>View all bobathon opportunities (including education/testing)</description>
+        </filter>
+        <filter name="real_opportunities_only">
+          <url>https://github.ibm.com/WW-CE/seller-bobathon-builder/issues?q=label:opportunity-tracking+-label:education-testing</url>
+          <description>View only real client opportunities (excludes education/testing)</description>
+        </filter>
+        <filter name="education_testing_only">
+          <url>https://github.ibm.com/WW-CE/seller-bobathon-builder/issues?q=label:education-testing</url>
+          <description>View only education and testing bobathons</description>
+        </filter>
+      </filter_options>
+      <export_options>
+        <option>Use GitHub's issue export feature</option>
+        <option>Query via GitHub API for programmatic access</option>
+        <option>Use GitHub CLI: gh issue list --label opportunity-tracking</option>
+        <option>Filter real opportunities: gh issue list --label opportunity-tracking --label "!education-testing"</option>
+      </export_options>
+    </reconciliation>
+  </opportunity_tracking_setup>
+
+  <troubleshooting>
+    <issue name="missing_token">
+      <symptom>Error: "GHE_TOKEN environment variable not set"</symptom>
+      <solution>
+        Set the GHE_TOKEN environment variable with your IBM GitHub Enterprise PAT.
+        See setup instructions above for your platform.
+      </solution>
+      <verification>
+        Check if token is set:
+        - Windows: echo $env:GHE_TOKEN
+        - macOS/Linux: echo $GHE_TOKEN
+      </verification>
+    </issue>
+
+    <issue name="invalid_token">
+      <symptom>HTTP 401 Unauthorized error</symptom>
+      <solution>
+        Token may be expired or invalid. Generate a new token with 'repo' scope.
+      </solution>
+      <verification>
+        Test token: curl -H "Authorization: token YOUR_TOKEN" https://github.ibm.com/api/v3/user
+      </verification>
+    </issue>
+
+    <issue name="permission_denied">
+      <symptom>HTTP 403 Forbidden error</symptom>
+      <solution>
+        Token doesn't have 'repo' scope. Regenerate token with correct permissions.
+      </solution>
+    </issue>
+
+    <issue name="network_error">
+      <symptom>Cannot connect to github.ibm.com</symptom>
+      <solution>
+        - Verify VPN connection if required
+        - Check corporate network access
+        - Test connectivity: ping github.ibm.com
+      </solution>
+    </issue>
+
+    <issue name="invalid_opportunity_format">
+      <symptom>Validation error about opportunity number format</symptom>
+      <solution>
+        Opportunity number must be:
+        - Exactly 18 characters
+        - Only letters (A-Z, a-z) and numbers (0-9)
+        - No spaces, dashes, or special characters
+        - Example: 000Xx00000XXxXXXX0
+      </solution>
+    </issue>
+
+    <issue name="command_not_found">
+      <symptom>PowerShell or curl command not found</symptom>
+      <solution>
+        - Windows: Ensure PowerShell is available (should be default)
+        - macOS/Linux: Ensure curl is installed (usually default)
+        - Try running command manually to verify
+      </solution>
+    </issue>
+  </troubleshooting>
+
+  <testing_setup>
+    <description>
+      Test your setup before running a real bobathon workflow
+    </description>
+    <test_steps>
+      <step number="1">
+        Verify GHE_TOKEN is set:
+        - Windows: echo $env:GHE_TOKEN
+        - macOS/Linux: echo $GHE_TOKEN
+      </step>
+      <step number="2">
+        Test API access:
+        curl -H "Authorization: token YOUR_TOKEN" https://github.ibm.com/api/v3/user
+      </step>
+      <step number="3">
+        Try creating a test issue manually using the commands in 4_tool_usage.xml
+      </step>
+      <step number="4">
+        Verify issue appears at: https://github.ibm.com/WW-CE/seller-bobathon-builder/issues
+      </step>
+      <step number="5">
+        Delete test issue if successful
+      </step>
+    </test_steps>
+  </testing_setup>
+
+  <security_notes>
+    <note>Never commit your GHE_TOKEN to version control</note>
+    <note>Store token securely (password manager recommended)</note>
+    <note>Rotate tokens periodically for security</note>
+    <note>Use minimum required permissions (repo scope only)</note>
+    <note>Revoke tokens when no longer needed</note>
+  </security_notes>
+
+  <support>
+    <description>
+      If you encounter issues with opportunity tracking setup
+    </description>
+    <resources>
+      <resource>IBM GitHub Enterprise documentation: https://github.ibm.com/help</resource>
+      <resource>GitHub API documentation: https://docs.github.com/en/rest</resource>
+      <resource>Contact your IBM GitHub Enterprise administrator for access issues</resource>
+    </resources>
+  </support>
+</setup_instructions>
