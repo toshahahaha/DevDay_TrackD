@@ -72,10 +72,14 @@ This guide includes:
 ## 📚 Workshop Structure
 
 ### Part 1: Basic Operations (60 minutes)
-**Lab 1: Bob SDLC Delivery**
-- To be added
+**Lab 1: Full SDLC with IBM Bob**
 
-📁 [`labs/lab1-SDLC](labs/lab1-SDLC/)
+- One prompt to Day-2 ops, end to end
+- Six hands-on labs from build to SRE
+- Production-ready artifacts, live on OpenShift
+- Tooling-agnostic: Actions, Jenkins, GitLab, and more
+
+📁 [[`labs/lab1-SDLC](labs/lab1-SDLC/](https://catherinecao2016.github.io/bob-sdlc-workshop/index.html))
 
 
 ### Part 2: Head-to-Head Comparison (50 minutes)
@@ -120,11 +124,8 @@ Based on IBM's internal "Client Zero" data (60+ case studies):
 - 📄 [External Links & Resources](resources/external-links.md)
 
 ### Lab Materials
-- 📁 [Lab 1: Full Software Development Lifecycle](labs/lab1-SDLC/)
+- 📁 [Lab 1: Full Software Development Lifecycle](https://catherinecao2016.github.io/bob-sdlc-workshop/index.html)
 - 📁 [Lab 2: Head-to-Head Comparison](labs/lab2-client-specific/)
-
-### Schedule
-- 📄 [Detailed Agenda](schedule/detailed-agenda.md)
 
 ## 💡 Key Takeaways
 
