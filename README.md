@@ -79,7 +79,7 @@ This guide includes:
 - Production-ready artifacts, live on OpenShift
 - Tooling-agnostic: Actions, Jenkins, GitLab, and more
 
-📁 [[`labs/lab1-SDLC](labs/lab1-SDLC/](https://catherinecao2016.github.io/bob-sdlc-workshop/index.html))
+📁 https://catherinecao2016.github.io/bob-sdlc-workshop/stages/lab-1-build-app.html
 
 
 ### Part 2: Head-to-Head Comparison (50 minutes)
